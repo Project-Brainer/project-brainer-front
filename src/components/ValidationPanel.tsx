@@ -10,6 +10,7 @@ export function ValidationPanel() {
   const projectId = useGraphStore((s) => s.project?.id ?? null);
   const issues = useUiStore((s) => s.validationIssues);
   const running = useUiStore((s) => s.validationRunning);
+  const ranAt = useUiStore((s) => s.validationRunAt);
   const error = useUiStore((s) => s.validationError);
   const setValidation = useUiStore((s) => s.setValidation);
   const setRunning = useUiStore((s) => s.setValidationRunning);
@@ -19,6 +20,7 @@ export function ValidationPanel() {
 
   const errorCount = issues.filter((i) => i.severity === 'error').length;
   const warnCount = issues.filter((i) => i.severity === 'warning').length;
+  const hasRun = ranAt !== null;
 
   const run = async () => {
     if (!projectId) return;
@@ -52,9 +54,17 @@ export function ValidationPanel() {
       )}
 
       {issues.length === 0 ? (
-        <div className="pb-validation-empty">
-          {running ? 'Checking…' : 'No issues yet. Run check to validate the graph.'}
-        </div>
+        running ? (
+          <div className="pb-validation-empty">Checking…</div>
+        ) : hasRun ? (
+          <div className="pb-validation-summary">
+            <span className="pb-pill pb-pill--success">All clear</span>
+          </div>
+        ) : (
+          <div className="pb-validation-empty">
+            Run check to validate the graph.
+          </div>
+        )
       ) : (
         <>
           <div className="pb-validation-summary">

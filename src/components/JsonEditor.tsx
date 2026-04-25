@@ -13,8 +13,11 @@ export interface JsonEditorProps {
  * Lightweight JSON editor — a textarea that parses on blur. We surface parse
  * errors inline rather than blocking user typing.
  *
- * Uses the "previous prop" pattern (React docs) to re-derive textarea text
- * when the external `value` changes, without an effect.
+ * To re-derive the textarea when the external `value` changes (e.g. switching
+ * inspected node), the caller should pass a stable `key` prop — that remounts
+ * this component cleanly without us having to track prop diffs ourselves.
+ * That avoids set-state-in-render loops when the parent passes literal objects
+ * like `data.request ?? {}` whose reference changes on every render.
  */
 export function JsonEditor({
   label,
@@ -24,14 +27,7 @@ export function JsonEditor({
   rows = 6,
 }: JsonEditorProps) {
   const [text, setText] = useState(() => stringify(value));
-  const [trackedValue, setTrackedValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
-
-  if (value !== trackedValue) {
-    setTrackedValue(value);
-    setText(stringify(value));
-    setError(null);
-  }
 
   return (
     <FieldShell label={label} hint={hint} error={error}>

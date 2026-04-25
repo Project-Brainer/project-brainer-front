@@ -4,11 +4,18 @@ import { HTTP_METHODS } from '../api/types';
 import { ChipInput } from '../components/ChipInput';
 import { Input, Select } from '../components/Field';
 import { JsonEditor } from '../components/JsonEditor';
-import { selectNodesByType, useGraphStore } from '../store/graphStore';
+import { useGraphStore } from '../store/graphStore';
 
 export function ApiEndpointEditor({ node }: { node: AnyNode }) {
   const updateNode = useGraphStore((s) => s.updateNode);
-  const roleNodes = useGraphStore((s) => selectNodesByType(s, 'ROLE'));
+  // Read stable `nodes` reference, then filter in render. Selecting a filtered
+  // array directly would return a new array each call and trip Zustand's
+  // `getSnapshot should be cached` check (infinite-loop guard).
+  const allNodes = useGraphStore((s) => s.nodes);
+  const roleNodes = useMemo(
+    () => allNodes.filter((n) => n.type === 'ROLE'),
+    [allNodes],
+  );
 
   const data: ApiEndpointData =
     (node.data as ApiEndpointData) ?? {
@@ -51,6 +58,7 @@ export function ApiEndpointEditor({ node }: { node: AnyNode }) {
         />
       </div>
       <JsonEditor
+        key={`${node.id}-request`}
         label="Request schema"
         hint="JSON"
         value={data.request ?? {}}
@@ -58,6 +66,7 @@ export function ApiEndpointEditor({ node }: { node: AnyNode }) {
         rows={5}
       />
       <JsonEditor
+        key={`${node.id}-response`}
         label="Response schema"
         hint="JSON"
         value={data.response ?? {}}
