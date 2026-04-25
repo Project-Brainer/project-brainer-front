@@ -1,0 +1,220 @@
+/* ============================================================
+   Canvas — node visuals, edge label, picker
+   ============================================================ */
+
+/* Override React Flow defaults to fit Brainer aesthetic */
+.pb-canvas-area .react-flow {
+  background: var(--bg-canvas);
+  font-family: var(--font-sans);
+}
+.pb-canvas-area .react-flow__attribution {
+  display: none;
+}
+.pb-canvas-area .react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--neutral-5);
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+.pb-canvas-area .react-flow__handle:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pb-canvas-area .react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+.pb-canvas-area .react-flow__connection-path {
+  stroke: var(--accent);
+}
+
+.pb-canvas-area .pb-rf-controls.react-flow__controls {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-md);
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.pb-canvas-area .react-flow__controls-button {
+  border: 0;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-surface);
+  width: 28px;
+  height: 28px;
+}
+.pb-canvas-area .react-flow__controls-button:hover {
+  background: var(--bg-hover);
+}
+
+/* -------- Node body -------- */
+
+.pb-node {
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-node);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-sans);
+  cursor: default;
+  user-select: none;
+}
+
+.pb-node--selected {
+  box-shadow: var(--shadow-node-selected);
+}
+
+.pb-node--forbidden {
+  opacity: 0.45;
+}
+
+.pb-node__handle {
+  /* leverages base .react-flow__handle styles above */
+}
+
+.pb-node__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pb-node__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+}
+
+.pb-node__name {
+  font-weight: 500;
+  font-size: var(--text-base);
+  color: var(--fg-1);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pb-node__subtitle {
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+}
+
+.pb-node__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pb-node__fields {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-sm);
+  color: var(--fg-3);
+  display: grid;
+  gap: 2px;
+}
+.pb-node__fields li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.pb-node__fields li > span:first-child {
+  color: var(--fg-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pb-node__fields-more {
+  color: var(--fg-4);
+  font-style: italic;
+}
+
+/* -------- Edge label -------- */
+
+.pb-edge-label {
+  position: absolute;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  background: var(--bg-surface);
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-hairline);
+  color: var(--fg-3);
+  pointer-events: all;
+  white-space: nowrap;
+}
+.pb-edge-label--selected {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* -------- Edge picker popover -------- */
+
+.pb-edge-picker {
+  position: fixed;
+  z-index: 60;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  min-width: 200px;
+  animation: pb-fade-in var(--dur-fast) var(--ease-out);
+}
+
+.pb-edge-picker__title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--fg-4);
+  padding: 6px 8px 4px;
+}
+
+.pb-edge-picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pb-edge-picker__btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--fg-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+.pb-edge-picker__btn:hover {
+  background: var(--bg-hover);
+}
+.pb-edge-picker__type {
+  flex: 1;
+}
+.pb-edge-picker__code {
+  color: var(--fg-4);
+  font-size: var(--text-2xs);
+}
