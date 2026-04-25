@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.dark.css">
+<style>
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .chip { padding: 14px 12px; border-radius: 8px; border: 1px solid rgba(255,255,250,0.06); display: flex; flex-direction: column; gap: 4px; }
+  .title { font-family: var(--font-sans); font-weight: 500; font-size: 13px; }
+  .hex { font-family: var(--font-mono); font-size: 10px; opacity: 0.75; letter-spacing: 0.02em; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="chip" style="background: #16243F; color: #8FB6FF;">
+      <span class="title">Screen</span>
+      <span class="hex">bg 16243F / fg 8FB6FF</span>
+    </div>
+    <div class="chip" style="background: #211D44; color: #B0A4FF;">
+      <span class="title">UI Element</span>
+      <span class="hex">bg 211D44 / fg B0A4FF</span>
+    </div>
+    <div class="chip" style="background: #142A20; color: #6FD49B;">
+      <span class="title">API Endpoint</span>
+      <span class="hex">bg 142A20 / fg 6FD49B</span>
+    </div>
+    <div class="chip" style="background: #2C1F12; color: #E0A66A;">
+      <span class="title">Data Model</span>
+      <span class="hex">bg 2C1F12 / fg E0A66A</span>
+    </div>
+    <div class="chip" style="background: #2A1622; color: #E59ABF;">
+      <span class="title">Role</span>
+      <span class="hex">bg 2A1622 / fg E59ABF</span>
+    </div>
+  </div>
+  <div style="margin-top: 14px; font-family: var(--font-sans); font-size: 12px; color: var(--fg-3); line-height: 1.5;">
+    Node-type accents on dark. Tints stay deep — never a full fill, only on the <strong style="color: var(--fg-1); font-weight: 500;">header chip</strong>.
+  </div>
+</body>
+</html>

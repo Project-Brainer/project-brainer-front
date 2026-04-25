@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>
+  body { padding: 20px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+  .field { flex: 1 1 240px; display: flex; flex-direction: column; gap: 6px; }
+  .label { font-family: var(--font-sans); font-weight: 500; font-size: 12px; color: var(--fg-3); }
+  .input, .select {
+    font-family: var(--font-sans); font-size: 13px; color: var(--fg-1);
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border-hairline);
+    background: #FFFFFF; width: 100%; box-sizing: border-box;
+    transition: all 120ms var(--ease-out);
+  }
+  .input:hover { border-color: var(--border-default); }
+  .focused { border-color: var(--signal-5); box-shadow: 0 0 0 3px rgba(91,66,232,0.22); }
+  .select { display: flex; justify-content: space-between; align-items: center; }
+  .chev { font-family: var(--font-mono); color: var(--fg-4); }
+  .hint { font-family: var(--font-sans); font-size: 11px; color: var(--fg-4); }
+</style>
+</head>
+<body>
+  <div class="field">
+    <span class="label">Field name</span>
+    <input class="input" value="email">
+    <span class="hint">The key used when this model is serialized.</span>
+  </div>
+  <div class="field">
+    <span class="label">Data type</span>
+    <div class="select focused">
+      <span style="font-family: var(--font-mono); font-size: 13px;">string</span>
+      <span class="chev">⌄</span>
+    </div>
+    <span class="hint">Required for prompt generation.</span>
+  </div>
+  <div class="field">
+    <span class="label">Description</span>
+    <input class="input" placeholder="Optional">
+  </div>
+</body>
+</html>

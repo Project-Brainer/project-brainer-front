@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>
+  body { background: var(--bg-raised); padding: 28px 24px 32px; }
+  .row { display: flex; gap: 16px; }
+  .card { flex: 1; background: #FFFFFF; height: 84px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .xs { box-shadow: 0 1px 0 0 rgba(17, 17, 16, 0.04); }
+  .sm { box-shadow: 0 1px 2px 0 rgba(17, 17, 16, 0.05), 0 0 0 1px rgba(17, 17, 16, 0.04); }
+  .md { box-shadow: 0 2px 4px -1px rgba(17,17,16,0.06), 0 4px 8px -2px rgba(17,17,16,0.04), 0 0 0 1px rgba(17,17,16,0.04); }
+  .lg { box-shadow: 0 4px 8px -2px rgba(17,17,16,0.06), 0 12px 24px -6px rgba(17,17,16,0.08); }
+  .xl { box-shadow: 0 8px 16px -4px rgba(17,17,16,0.08), 0 24px 48px -12px rgba(17,17,16,0.12); }
+  .name { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); }
+  .val { font-family: var(--font-sans); font-size: 13px; font-weight: 500; color: var(--fg-1); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="card xs"><span class="name">xs</span><span class="val">Hairline</span></div>
+    <div class="card sm"><span class="name">sm</span><span class="val">Toolbar</span></div>
+    <div class="card md"><span class="name">md</span><span class="val">Card</span></div>
+    <div class="card lg"><span class="name">lg</span><span class="val">Menu</span></div>
+    <div class="card xl"><span class="name">xl</span><span class="val">Modal</span></div>
+  </div>
+</body>
+</html>

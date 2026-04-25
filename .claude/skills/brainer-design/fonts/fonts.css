@@ -1,0 +1,10 @@
+/* Project-Brainer webfonts
+ * Display: Instrument Serif — editorial warmth for headlines
+ * Sans:    Geist — precise UI sans (Vercel)
+ * Mono:    Geist Mono — technical / code / node labels
+ *
+ * All three loaded from Google Fonts. If you self-host later, drop the ttf
+ * files in /fonts/ and replace the @import with @font-face declarations.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');

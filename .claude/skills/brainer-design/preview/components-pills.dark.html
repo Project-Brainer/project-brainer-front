@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.dark.css">
+<style>
+  body { padding: 20px 24px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font-sans); font-weight: 500; font-size: 11px;
+    padding: 3px 8px; border-radius: 999px; line-height: 1.4;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .method { font-family: var(--font-mono); font-weight: 600; font-size: 10px; padding: 3px 7px; border-radius: 4px; letter-spacing: 0.04em; }
+  .get    { background: #142A20; color: #6FD49B; }
+  .post   { background: #211D44; color: #B0A4FF; }
+  .patch  { background: #2A2012; color: #E0B36A; }
+  .delete { background: #2C1614; color: #F08A82; }
+
+  .conn { display: inline-flex; align-items: center; gap: 4px; background: var(--neutral-2); border: 1px solid var(--border-default); padding: 3px 9px; border-radius: 999px; font-size: 11px; color: var(--fg-2); }
+</style>
+</head>
+<body>
+  <span class="pill" style="background: #16243F; color: #8FB6FF;"><span class="dot" style="background: #8FB6FF;"></span>Screen</span>
+  <span class="pill" style="background: #211D44; color: #B0A4FF;"><span class="dot" style="background: #B0A4FF;"></span>UI Element</span>
+  <span class="pill" style="background: #142A20; color: #6FD49B;"><span class="dot" style="background: #6FD49B;"></span>API</span>
+  <span class="pill" style="background: #2C1F12; color: #E0A66A;"><span class="dot" style="background: #E0A66A;"></span>Data Model</span>
+  <span class="pill" style="background: #2A1622; color: #E59ABF;"><span class="dot" style="background: #E59ABF;"></span>Role</span>
+
+  <span style="width: 100%; height: 1px;"></span>
+
+  <span class="method get">GET</span>
+  <span class="method post">POST</span>
+  <span class="method patch">PATCH</span>
+  <span class="method delete">DELETE</span>
+
+  <span style="width: 100%; height: 1px;"></span>
+
+  <span class="conn">opens →</span>
+  <span class="conn">calls API →</span>
+  <span class="conn">reads data →</span>
+  <span class="conn">writes data →</span>
+  <span class="conn">updates →</span>
+</body>
+</html>

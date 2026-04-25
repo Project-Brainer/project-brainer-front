@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.dark.css">
+<style>
+  .row { display: flex; gap: 8px; }
+  .swatch { flex: 1; aspect-ratio: 1.1 / 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; border: 1px solid rgba(255,255,250,0.06); }
+  .hex { font-size: 10px; opacity: 0.85; }
+  .name { font-weight: 600; }
+  .light { color: #111110; }
+  .dark  { color: #F7F7F2; }
+  .primary-label { position: absolute; top: 8px; right: 10px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(20, 20, 18, 0.85); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="swatch dark"  style="background: #1A1640;"><span class="name">0</span><span class="hex">1A1640</span></div>
+    <div class="swatch dark"  style="background: #251E5C;"><span class="name">1</span><span class="hex">251E5C</span></div>
+    <div class="swatch dark"  style="background: #382C8C;"><span class="name">2</span><span class="hex">382C8C</span></div>
+    <div class="swatch dark"  style="background: #5B45D1;"><span class="name">3</span><span class="hex">5B45D1</span></div>
+    <div class="swatch dark"  style="background: #7A66F5;"><span class="name">4</span><span class="hex">7A66F5</span></div>
+    <div class="swatch light" style="background: #8D7BFF; position: relative;"><span class="primary-label">primary</span><span class="name">5</span><span class="hex">8D7BFF</span></div>
+    <div class="swatch light" style="background: #A89AFF;"><span class="name">6</span><span class="hex">A89AFF</span></div>
+    <div class="swatch light" style="background: #CFC6FF;"><span class="name">7</span><span class="hex">CFC6FF</span></div>
+    <div class="swatch light" style="background: #E8E4FF;"><span class="name">8</span><span class="hex">E8E4FF</span></div>
+  </div>
+  <div style="margin-top: 14px; font-family: var(--font-sans); font-size: 12px; color: var(--fg-3); line-height: 1.5;">
+    Signal color, brightened for dark surfaces. Active nodes, connection arrows, focus rings, primary CTAs. <strong style="color: var(--fg-1); font-weight: 500;">Sparingly.</strong>
+  </div>
+</body>
+</html>

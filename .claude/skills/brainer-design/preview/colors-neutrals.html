@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .row { display: flex; gap: 8px; }
+  .swatch { flex: 1; aspect-ratio: 1.1 / 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; border: 1px solid rgba(17,17,16,0.06); }
+  .hex { font-size: 10px; opacity: 0.85; }
+  .name { font-weight: 600; }
+  .light { color: #111110; }
+  .dark { color: #FDFDFC; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="swatch light" style="background: #FDFDFC;"><span class="name">0</span><span class="hex">FDFDFC</span></div>
+    <div class="swatch light" style="background: #F7F7F5;"><span class="name">1</span><span class="hex">F7F7F5</span></div>
+    <div class="swatch light" style="background: #EFEFEC;"><span class="name">2</span><span class="hex">EFEFEC</span></div>
+    <div class="swatch light" style="background: #E5E5E1;"><span class="name">3</span><span class="hex">E5E5E1</span></div>
+    <div class="swatch light" style="background: #D4D4CE;"><span class="name">4</span><span class="hex">D4D4CE</span></div>
+    <div class="swatch light" style="background: #B8B8B0;"><span class="name">5</span><span class="hex">B8B8B0</span></div>
+    <div class="swatch dark" style="background: #8E8E84;"><span class="name">6</span><span class="hex">8E8E84</span></div>
+    <div class="swatch dark" style="background: #6B6B62;"><span class="name">7</span><span class="hex">6B6B62</span></div>
+    <div class="swatch dark" style="background: #494943;"><span class="name">8</span><span class="hex">494943</span></div>
+    <div class="swatch dark" style="background: #2F2F2B;"><span class="name">9</span><span class="hex">2F2F2B</span></div>
+    <div class="swatch dark" style="background: #1C1C1A;"><span class="name">10</span><span class="hex">1C1C1A</span></div>
+    <div class="swatch dark" style="background: #111110;"><span class="name">11</span><span class="hex">111110</span></div>
+    <div class="swatch dark" style="background: #0A0A09;"><span class="name">12</span><span class="hex">0A0A09</span></div>
+  </div>
+</body>
+</html>
