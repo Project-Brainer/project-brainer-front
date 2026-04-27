@@ -12,10 +12,12 @@
  */
 
 import { create } from 'zustand';
+import { branchesApi } from '../api/branches';
 import { edgesApi } from '../api/edges';
 import { graphApi } from '../api/graph';
 import { nodesApi } from '../api/nodes';
 import { projectsApi } from '../api/projects';
+import { useBranchStore } from './branchStore';
 import type {
   AnyNode,
   CreateEdgeInput,
@@ -87,6 +89,9 @@ export interface GraphState {
 
   // -------- replace (import) --------
   replaceFromGraph: (graph: ProjectGraph) => void;
+
+  // -------- branch graph loading --------
+  loadBranchGraph: (projectId: string, branchId: string) => Promise<void>;
 }
 
 let saveAbort: AbortController | null = null;
@@ -124,7 +129,13 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     };
 
     try {
-      const updated = await graphApi.replace(project.id, body);
+      const activeBranchId = useBranchStore.getState().activeBranchId;
+      let updated;
+      if (activeBranchId) {
+        updated = await branchesApi.replaceGraph(project.id, activeBranchId, body);
+      } else {
+        updated = await graphApi.replace(project.id, body);
+      }
       // Reconcile server response — keeps timestamps fresh, ids canonical.
       set({
         project: updated.project,
@@ -325,6 +336,21 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         saveStatus: 'saved',
         lastSavedAt: Date.now(),
       });
+    },
+
+    async loadBranchGraph(projectId, branchId) {
+      set({ loadingProjectId: projectId, loadError: null, saveStatus: 'idle' });
+      try {
+        const graph = await branchesApi.getGraph(projectId, branchId);
+        set({
+          project: graph.project,
+          nodes: graph.nodes,
+          edges: graph.edges,
+          loadingProjectId: null,
+        });
+      } catch (err) {
+        set({ loadError: (err as Error).message, loadingProjectId: null });
+      }
     },
   };
 });

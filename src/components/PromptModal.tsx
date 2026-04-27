@@ -4,6 +4,7 @@ import { validationApi } from '../api/validation';
 import type { PromptResponse } from '../api/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { useBranchStore, selectActiveBranch } from '../store/branchStore';
 import { Button } from './Button';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
@@ -18,7 +19,11 @@ export function PromptModal() {
   const flushSave = useGraphStore((s) => s.flushSave);
   const setValidation = useUiStore((s) => s.setValidation);
 
+  const activeBranch = useBranchStore(selectActiveBranch);
+  const activeBranchId = useBranchStore((s) => s.activeBranchId);
+
   const [tab, setTab] = useState<Tab>('markdown');
+  const [diffOnly, setDiffOnly] = useState(true);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<PromptResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +54,9 @@ export function PromptModal() {
         }
         const result = await promptApi.generate(project.id, {
           nodeIds: scope ?? undefined,
+          ...(activeBranchId
+            ? { branchId: activeBranchId, diffOnly }
+            : {}),
         });
         setData(result);
       } catch (err) {
@@ -57,7 +65,7 @@ export function PromptModal() {
         setLoading(false);
       }
     })();
-  }, [open, project, scope, flushSave, setValidation]);
+  }, [open, project, scope, diffOnly, activeBranchId, flushSave, setValidation]);
 
   const handleCopy = async () => {
     if (!data) return;
@@ -90,7 +98,13 @@ export function PromptModal() {
       title={
         <span className="pb-prompt-title">
           <Icon name="zap" size={16} />
-          <span>{scope ? 'Prompt for selection' : 'Project prompt'}</span>
+          <span>
+            {activeBranch
+              ? `Prompt — ${activeBranch.name}`
+              : scope
+              ? 'Prompt for selection'
+              : 'Project prompt'}
+          </span>
         </span>
       }
       width={760}
@@ -116,6 +130,24 @@ export function PromptModal() {
         </>
       }
     >
+      {activeBranchId && (
+        <div className="pb-prompt-branch-toggle">
+          <label className="pb-checkbox">
+            <input
+              type="checkbox"
+              checked={diffOnly}
+              onChange={(e) => setDiffOnly(e.target.checked)}
+            />
+            Branch changes only
+          </label>
+          <span className="pb-prompt-branch-hint">
+            {diffOnly
+              ? 'Prompt covers only new/modified nodes in this branch'
+              : 'Prompt covers the full resolved project'}
+          </span>
+        </div>
+      )}
+
       <div className="pb-prompt-tabs">
         <button
           type="button"

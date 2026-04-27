@@ -3,7 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import type { AnyNode, NodeType } from '../api/types';
 import { Canvas } from '../canvas/Canvas';
 import { Button } from '../components/Button';
+import { BranchSelector } from '../components/BranchSelector';
+import { CommitModal } from '../components/CommitModal';
 import { Icon } from '../components/Icon';
+import { MergeModal } from '../components/MergeModal';
 import { PromptModal } from '../components/PromptModal';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { EdgeInspector } from '../editors/EdgeInspector';
@@ -11,6 +14,7 @@ import { NodeInspector } from '../editors/NodeInspector';
 import { NODE_META } from '../lib/nodeMeta';
 import { SimulationView } from '../simulation/SimulationView';
 import { useGraphStore } from '../store/graphStore';
+import { useBranchStore } from '../store/branchStore';
 import { useUiStore } from '../store/uiStore';
 
 export function ProjectPage() {
@@ -34,13 +38,18 @@ export function ProjectPage() {
   const selectedEdgeId = useUiStore((s) => s.selectedEdgeId);
   const openPrompt = useUiStore((s) => s.openPromptModal);
 
+  const activeBranchId = useBranchStore((s) => s.activeBranchId);
+  const openCommitModal = useBranchStore((s) => s.openCommitModal);
+  const resetBranches = useBranchStore((s) => s.reset);
+
   useEffect(() => {
     if (!projectId) return;
     loadProject(projectId);
     return () => {
       reset();
+      resetBranches();
     };
-  }, [projectId, loadProject, reset]);
+  }, [projectId, loadProject, reset, resetBranches]);
 
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId)
@@ -87,10 +96,20 @@ export function ProjectPage() {
             onBlur={() => renameProject(project.name)}
           />
           <SaveStatusBadge status={saveStatus} error={lastSaveError} />
+          <BranchSelector />
         </div>
         <div className="pb-topbar__right">
           {mode === 'design' ? (
             <>
+              {activeBranchId && (
+                <Button
+                  variant="ghost"
+                  iconLeft="bookmark"
+                  onClick={openCommitModal}
+                >
+                  Checkpoint
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 iconLeft="play"
@@ -131,6 +150,8 @@ export function ProjectPage() {
       )}
 
       <PromptModal />
+      <CommitModal />
+      <MergeModal />
     </div>
   );
 }

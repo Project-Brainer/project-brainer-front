@@ -10,6 +10,7 @@ import './styles/inspector.css';
 import './styles/validation.css';
 import './styles/simulation.css';
 import './styles/prompt.css';
+import './styles/branches.css';
 
 import App from './App.tsx';
 

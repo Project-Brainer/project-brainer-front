@@ -323,6 +323,78 @@ export interface PromptResponse {
 export interface PromptRequestBody {
   nodeIds?: string[];
   includeRelated?: boolean;
+  branchId?: string;
+  diffOnly?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Branches
+// ---------------------------------------------------------------------------
+
+export type ChangeOperation = 'ADD' | 'MODIFY' | 'DELETE';
+
+export interface Branch {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BranchCommit {
+  id: string;
+  branchId: string;
+  message: string;
+  graphSnapshot: { nodes: AnyNode[]; edges: Edge[] };
+  createdAt: string;
+}
+
+export interface BranchNodeDiff {
+  nodeId: string;
+  operation: ChangeOperation;
+  snapshot: AnyNode | null;
+}
+
+export interface BranchEdgeDiff {
+  edgeId: string;
+  operation: ChangeOperation;
+  snapshot: Edge | null;
+}
+
+export interface BranchDiff {
+  nodes: BranchNodeDiff[];
+  edges: BranchEdgeDiff[];
+}
+
+export interface MergeConflict {
+  entityType: 'node' | 'edge';
+  entityId: string;
+  sourceOperation: ChangeOperation;
+  targetOperation: ChangeOperation;
+  sourceSnapshot: AnyNode | Edge | null;
+  targetSnapshot: AnyNode | Edge | null;
+}
+
+export interface MergeResult {
+  conflicts: MergeConflict[];
+  merged: boolean;
+}
+
+export interface CreateBranchInput {
+  name: string;
+  description?: string;
+  parentId?: string;
+}
+
+export interface ResolveMergeInput {
+  sourceBranchId: string;
+  resolutions: Array<{
+    entityType: 'node' | 'edge';
+    entityId: string;
+    useSource: boolean;
+  }>;
 }
 
 // ---------------------------------------------------------------------------
