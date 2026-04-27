@@ -213,36 +213,6 @@
   margin-bottom: var(--space-2);
 }
 
-.pb-sidebar__btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: transparent;
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  color: var(--fg-2);
-  text-align: left;
-  cursor: pointer;
-  width: 100%;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.pb-sidebar__btn:hover {
-  background: var(--bg-surface);
-  color: var(--fg-1);
-}
-
-.pb-sidebar__btn-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-}
 
 .pb-canvas-area {
   position: relative;
