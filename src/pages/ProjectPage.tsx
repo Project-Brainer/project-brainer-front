@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { NodeType } from '../api/types';
+import type { AnyNode, NodeType } from '../api/types';
 import { Canvas } from '../canvas/Canvas';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
@@ -137,32 +137,66 @@ export function ProjectPage() {
 
 function Sidebar() {
   const createNode = useGraphStore((s) => s.createNode);
+  const nodes = useGraphStore((s) => s.nodes);
+  const selectedNodeId = useUiStore((s) => s.selectedNodeId);
+  const selectNode = useUiStore((s) => s.selectNode);
+  const focusNode = useUiStore((s) => s.focusNode);
+
+  const nodesByType = useMemo(() => {
+    const map: Partial<Record<NodeType, AnyNode[]>> = {};
+    for (const node of nodes) {
+      if (!map[node.type as NodeType]) map[node.type as NodeType] = [];
+      map[node.type as NodeType]!.push(node);
+    }
+    return map;
+  }, [nodes]);
 
   return (
     <aside className="pb-sidebar">
       <div className="pb-sidebar__group">
-        <div className="pb-sidebar__title">Add node</div>
+        <div className="pb-sidebar__title">Elements</div>
         {(Object.keys(NODE_META) as NodeType[]).map((type) => {
           const meta = NODE_META[type];
+          const typeNodes = nodesByType[type] ?? [];
           return (
-            <button
-              key={type}
-              className="pb-sidebar__btn"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('application/x-brainer-node', type);
-                e.dataTransfer.effectAllowed = 'move';
-              }}
-              onClick={() => createNode({ type })}
-              title={meta.description}
-            >
-              <span
-                className="pb-sidebar__btn-dot"
-                style={{ background: meta.fgVar }}
-              />
-              <Icon name={meta.iconName} size={14} />
-              <span>{meta.label}</span>
-            </button>
+            <div key={type} className="pb-sidebar__type-group">
+              <div className="pb-sidebar__section-head">
+                <span
+                  className="pb-sidebar__section-title"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('application/x-brainer-node', type);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  title={`Drag to add ${meta.label}`}
+                >
+                  {meta.label}
+                </span>
+                <button
+                  className="pb-sidebar__add-btn"
+                  onClick={() => createNode({ type })}
+                  title={`Add ${meta.label}`}
+                >
+                  <Icon name="plus" size={12} />
+                </button>
+              </div>
+              {typeNodes.map((node) => (
+                <button
+                  key={node.id}
+                  className={`pb-sidebar__node-item${selectedNodeId === node.id ? ' pb-sidebar__node-item--active' : ''}`}
+                  onClick={() => {
+                    selectNode(node.id);
+                    focusNode(node.id);
+                  }}
+                  title={node.name || meta.label}
+                >
+                  <Icon name={meta.iconName} size={14} />
+                  <span className="pb-sidebar__node-name">
+                    {node.name || <span className="pb-sidebar__node-unnamed">{meta.shortLabel}</span>}
+                  </span>
+                </button>
+              ))}
+            </div>
           );
         })}
       </div>
