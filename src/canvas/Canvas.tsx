@@ -80,11 +80,24 @@ function CanvasInner() {
 
   const selectedNodeId = useUiStore((s) => s.selectedNodeId);
   const selectedEdgeId = useUiStore((s) => s.selectedEdgeId);
+  const focusNodeId = useUiStore((s) => s.focusNodeId);
   const selectNode = useUiStore((s) => s.selectNode);
   const selectEdge = useUiStore((s) => s.selectEdge);
   const clearSelection = useUiStore((s) => s.clearSelection);
+  const clearFocusNode = useUiStore((s) => s.clearFocusNode);
 
   const [picker, setPicker] = useState<PickerState | null>(null);
+
+  // Focus canvas on a node when requested from sidebar.
+  useEffect(() => {
+    if (!focusNodeId || !instanceRef.current) return;
+    instanceRef.current.fitView({
+      nodes: [{ id: focusNodeId }],
+      duration: 450,
+      padding: 0.4,
+    });
+    clearFocusNode();
+  }, [focusNodeId, clearFocusNode]);
 
   // Apply persisted viewport once project loads.
   const initialViewport = project?.viewport;

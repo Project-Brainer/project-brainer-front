@@ -12,6 +12,7 @@ export type CanvasMode = 'design' | 'simulate';
 export interface UiState {
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
+  focusNodeId: string | null;
   mode: CanvasMode;
   validationIssues: ValidationIssue[];
   validationRunAt: number | null;
@@ -23,6 +24,8 @@ export interface UiState {
   selectNode: (id: string | null) => void;
   selectEdge: (id: string | null) => void;
   clearSelection: () => void;
+  focusNode: (id: string) => void;
+  clearFocusNode: () => void;
   setMode: (mode: CanvasMode) => void;
   setValidation: (issues: ValidationIssue[]) => void;
   setValidationRunning: (running: boolean) => void;
@@ -34,6 +37,7 @@ export interface UiState {
 export const useUiStore = create<UiState>()((set) => ({
   selectedNodeId: null,
   selectedEdgeId: null,
+  focusNodeId: null,
   mode: 'design',
   validationIssues: [],
   validationRunAt: null,
@@ -50,6 +54,12 @@ export const useUiStore = create<UiState>()((set) => ({
   },
   clearSelection() {
     set({ selectedNodeId: null, selectedEdgeId: null });
+  },
+  focusNode(id) {
+    set({ focusNodeId: id });
+  },
+  clearFocusNode() {
+    set({ focusNodeId: null });
   },
   setMode(mode) {
     set({ mode });
