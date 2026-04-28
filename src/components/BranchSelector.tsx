@@ -10,6 +10,7 @@ export function BranchSelector() {
   const project = useGraphStore((s) => s.project);
   const loadBranchGraph = useGraphStore((s) => s.loadBranchGraph);
   const loadProject = useGraphStore((s) => s.loadProject);
+  const flushSave = useGraphStore((s) => s.flushSave);
 
   const branches = useBranchStore((s) => s.branches);
   const loadingBranches = useBranchStore((s) => s.loadingBranches);
@@ -47,6 +48,10 @@ export function BranchSelector() {
   const switchTo = async (branchId: string | null) => {
     if (!project) return;
     setOpen(false);
+    // Flush any pending debounced save BEFORE switching the active branch ID.
+    // Without this, the 600ms debounce fires after setActiveBranch and writes
+    // the current branch's changes into the newly-selected branch.
+    await flushSave();
     setActiveBranch(branchId);
     if (branchId) {
       await loadBranchGraph(project.id, branchId);

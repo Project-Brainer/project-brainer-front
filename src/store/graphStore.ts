@@ -221,6 +221,27 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       const { project, nodes } = get();
       if (!project) return null;
       const data = defaultNodeData(type);
+
+      const activeBranchId = useBranchStore.getState().activeBranchId;
+      if (activeBranchId) {
+        // Branch mode: create locally with a client-side ID.
+        // replaceGraph will compute the ADD delta vs parent and persist it.
+        const now = new Date().toISOString();
+        const branchNode: AnyNode = {
+          id: crypto.randomUUID(),
+          projectId: project.id,
+          type,
+          name: name ?? defaultNodeName(type, nodes.filter((n) => n.type === type).length),
+          position: position ?? { x: 80, y: 80 },
+          data: data as never,
+          createdAt: now,
+          updatedAt: now,
+        };
+        set({ nodes: [...get().nodes, branchNode] });
+        markDirty();
+        return branchNode;
+      }
+
       const input: CreateNodeInput = {
         type,
         name: name ?? defaultNodeName(type, nodes.filter((n) => n.type === type).length),
@@ -266,6 +287,14 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         (e) => e.sourceId !== nodeId && e.targetId !== nodeId,
       );
       set({ nodes, edges });
+
+      const activeBranchId = useBranchStore.getState().activeBranchId;
+      if (activeBranchId) {
+        // Branch mode: save as DELETE delta via replaceGraph, don't touch project table.
+        markDirty();
+        return;
+      }
+
       try {
         await nodesApi.remove(project.id, nodeId);
       } catch (err) {
@@ -276,6 +305,28 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     async createEdge(input) {
       const { project } = get();
       if (!project) return null;
+
+      const activeBranchId = useBranchStore.getState().activeBranchId;
+      if (activeBranchId) {
+        // Branch mode: create locally with a client-side ID.
+        // replaceGraph will compute the ADD delta vs parent and persist it.
+        const now = new Date().toISOString();
+        const branchEdge: Edge = {
+          id: crypto.randomUUID(),
+          projectId: project.id,
+          sourceId: input.sourceId,
+          targetId: input.targetId,
+          type: input.type,
+          label: input.label ?? null,
+          data: (input.data as Record<string, unknown>) ?? {},
+          createdAt: now,
+          updatedAt: now,
+        };
+        set({ edges: [...get().edges, branchEdge] });
+        markDirty();
+        return branchEdge;
+      }
+
       try {
         const created = await edgesApi.create(project.id, input);
         set({ edges: [...get().edges, created] });
@@ -305,6 +356,14 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       const { project } = get();
       if (!project) return;
       set({ edges: get().edges.filter((e) => e.id !== edgeId) });
+
+      const activeBranchId = useBranchStore.getState().activeBranchId;
+      if (activeBranchId) {
+        // Branch mode: save as DELETE delta via replaceGraph, don't touch project table.
+        markDirty();
+        return;
+      }
+
       try {
         await edgesApi.remove(project.id, edgeId);
       } catch (err) {
