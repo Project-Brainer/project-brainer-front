@@ -7,7 +7,10 @@
 
 import { create } from 'zustand';
 import { branchesApi } from '../api/branches';
-import type { Branch, CreateBranchInput, MergeResult } from '../api/types';
+import type { Branch, CreateBranchInput, MergeResult, MergeNodeConflict, MergeEdgeConflict } from '../api/types';
+
+// Re-export for convenience
+export type { MergeNodeConflict, MergeEdgeConflict };
 
 export interface BranchState {
   branches: Branch[];

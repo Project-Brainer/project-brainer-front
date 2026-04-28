@@ -351,35 +351,54 @@ export interface BranchCommit {
   createdAt: string;
 }
 
+/** Returned by GET /branches/:id/diff */
 export interface BranchNodeDiff {
   nodeId: string;
   operation: ChangeOperation;
-  snapshot: AnyNode | null;
+  snapshot: Record<string, unknown> | null;
 }
 
 export interface BranchEdgeDiff {
   edgeId: string;
   operation: ChangeOperation;
-  snapshot: Edge | null;
+  snapshot: Record<string, unknown> | null;
 }
 
+/** Backend returns nodeChanges / edgeChanges (not nodes/edges) */
 export interface BranchDiff {
-  nodes: BranchNodeDiff[];
-  edges: BranchEdgeDiff[];
+  nodeChanges: BranchNodeDiff[];
+  edgeChanges: BranchEdgeDiff[];
 }
 
-export interface MergeConflict {
-  entityType: 'node' | 'edge';
-  entityId: string;
-  sourceOperation: ChangeOperation;
-  targetOperation: ChangeOperation;
-  sourceSnapshot: AnyNode | Edge | null;
-  targetSnapshot: AnyNode | Edge | null;
+/** Returned by GET /branches/:id/graph and POST /branches/:id/graph */
+export interface BranchGraph {
+  nodes: AnyNode[];
+  edges: Edge[];
+  viewport?: Viewport;
 }
 
+/** Merge conflict shapes — backend returns separate node/edge arrays */
+export interface MergeNodeConflict {
+  nodeId: string;
+  sourceOp: ChangeOperation;
+  targetOp: ChangeOperation;
+  sourceSnapshot: Record<string, unknown> | null;
+  targetSnapshot: Record<string, unknown> | null;
+}
+
+export interface MergeEdgeConflict {
+  edgeId: string;
+  sourceOp: ChangeOperation;
+  targetOp: ChangeOperation;
+  sourceSnapshot: Record<string, unknown> | null;
+  targetSnapshot: Record<string, unknown> | null;
+}
+
+/** Backend MergeResultDto */
 export interface MergeResult {
-  conflicts: MergeConflict[];
   merged: boolean;
+  nodeConflicts: MergeNodeConflict[];
+  edgeConflicts: MergeEdgeConflict[];
 }
 
 export interface CreateBranchInput {
@@ -388,13 +407,11 @@ export interface CreateBranchInput {
   parentId?: string;
 }
 
+/** Backend ResolveMergeDto */
 export interface ResolveMergeInput {
-  sourceBranchId: string;
-  resolutions: Array<{
-    entityType: 'node' | 'edge';
-    entityId: string;
-    useSource: boolean;
-  }>;
+  targetBranchId: string;
+  resolvedNodes: Array<{ nodeId: string; snapshot: Record<string, unknown> | null }>;
+  resolvedEdges: Array<{ edgeId: string; snapshot: Record<string, unknown> | null }>;
 }
 
 // ---------------------------------------------------------------------------

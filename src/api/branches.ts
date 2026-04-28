@@ -3,9 +3,9 @@ import type {
   Branch,
   BranchCommit,
   BranchDiff,
+  BranchGraph,
   CreateBranchInput,
   MergeResult,
-  ProjectGraph,
   ReplaceGraphBody,
   ResolveMergeInput,
 } from './types';
@@ -30,11 +30,11 @@ export const branchesApi = {
     return http.del(`${br(projectId, branchId)}`);
   },
 
-  getGraph(projectId: string, branchId: string): Promise<ProjectGraph> {
+  getGraph(projectId: string, branchId: string): Promise<BranchGraph> {
     return http.get(`${br(projectId, branchId)}/graph`);
   },
 
-  replaceGraph(projectId: string, branchId: string, body: ReplaceGraphBody): Promise<ProjectGraph> {
+  replaceGraph(projectId: string, branchId: string, body: ReplaceGraphBody): Promise<BranchGraph> {
     return http.post(`${br(projectId, branchId)}/graph`, body);
   },
 
@@ -50,11 +50,19 @@ export const branchesApi = {
     return http.post(`${br(projectId, branchId)}/commits`, { message });
   },
 
-  merge(projectId: string, branchId: string, sourceBranchId: string): Promise<MergeResult> {
-    return http.post(`${br(projectId, branchId)}/merge`, { sourceBranchId });
+  /**
+   * Merge sourceBranchId INTO targetBranchId.
+   * Backend: POST /branches/:sourceBranchId/merge  body: { targetBranchId }
+   */
+  merge(projectId: string, sourceBranchId: string, targetBranchId: string): Promise<MergeResult> {
+    return http.post(`${br(projectId, sourceBranchId)}/merge`, { targetBranchId });
   },
 
-  resolveMerge(projectId: string, branchId: string, body: ResolveMergeInput): Promise<void> {
-    return http.post(`${br(projectId, branchId)}/merge/resolve`, body);
+  /**
+   * Submit conflict resolutions to complete a merge.
+   * Backend: POST /branches/:sourceBranchId/merge/resolve  body: ResolveMergeDto
+   */
+  resolveMerge(projectId: string, sourceBranchId: string, body: ResolveMergeInput): Promise<void> {
+    return http.post(`${br(projectId, sourceBranchId)}/merge/resolve`, body);
   },
 };

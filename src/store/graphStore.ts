@@ -130,20 +130,27 @@ export const useGraphStore = create<GraphState>()((set, get) => {
 
     try {
       const activeBranchId = useBranchStore.getState().activeBranchId;
-      let updated;
       if (activeBranchId) {
-        updated = await branchesApi.replaceGraph(project.id, activeBranchId, body);
+        // Branch save — backend returns BranchGraph (no project field).
+        // Keep the existing project metadata; only reconcile nodes/edges.
+        const updated = await branchesApi.replaceGraph(project.id, activeBranchId, body);
+        set({
+          nodes: updated.nodes as AnyNode[],
+          edges: updated.edges as Edge[],
+          saveStatus: 'saved',
+          lastSavedAt: Date.now(),
+        });
       } else {
-        updated = await graphApi.replace(project.id, body);
+        // Root save — backend returns full ProjectGraph including project.
+        const updated = await graphApi.replace(project.id, body);
+        set({
+          project: updated.project,
+          nodes: updated.nodes,
+          edges: updated.edges,
+          saveStatus: 'saved',
+          lastSavedAt: Date.now(),
+        });
       }
-      // Reconcile server response — keeps timestamps fresh, ids canonical.
-      set({
-        project: updated.project,
-        nodes: updated.nodes,
-        edges: updated.edges,
-        saveStatus: 'saved',
-        lastSavedAt: Date.now(),
-      });
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       set({
@@ -341,13 +348,14 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     async loadBranchGraph(projectId, branchId) {
       set({ loadingProjectId: projectId, loadError: null, saveStatus: 'idle' });
       try {
+        // BranchGraph has no `project` field — keep existing project metadata.
         const graph = await branchesApi.getGraph(projectId, branchId);
-        set({
-          project: graph.project,
-          nodes: graph.nodes,
-          edges: graph.edges,
+        set((s) => ({
+          project: s.project,
+          nodes: graph.nodes as AnyNode[],
+          edges: graph.edges as Edge[],
           loadingProjectId: null,
-        });
+        }));
       } catch (err) {
         set({ loadError: (err as Error).message, loadingProjectId: null });
       }

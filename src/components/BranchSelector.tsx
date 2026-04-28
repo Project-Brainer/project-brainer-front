@@ -73,12 +73,14 @@ export function BranchSelector() {
     setMerging(sourceBranchId);
     setMergeError(null);
     try {
-      const result = await branchesApi.merge(project.id, targetBranchId, sourceBranchId);
+      // merge(projectId, sourceBranchId, targetBranchId) — source goes INTO target
+      const result = await branchesApi.merge(project.id, sourceBranchId, targetBranchId);
       if (result.merged) {
         // No conflicts — reload the target branch graph
         await switchTo(targetBranchId);
-        useBranchStore.getState().closeMergeModal();
       } else {
+        // Conflicts — open resolver; active branch must be target
+        await switchTo(targetBranchId);
         useBranchStore.getState().openMergeModal(sourceBranchId, result);
         setOpen(false);
       }
