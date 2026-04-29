@@ -3,7 +3,7 @@ import type { AnyNode, ApiEndpointData, HttpMethod } from '../api/types';
 import { HTTP_METHODS } from '../api/types';
 import { ChipInput } from '../components/ChipInput';
 import { Input, Select } from '../components/Field';
-import { JsonEditor } from '../components/JsonEditor';
+import { SchemaBuilder } from '../components/SchemaBuilder';
 import { useGraphStore } from '../store/graphStore';
 
 export function ApiEndpointEditor({ node }: { node: AnyNode }) {
@@ -57,22 +57,22 @@ export function ApiEndpointEditor({ node }: { node: AnyNode }) {
           }
         />
       </div>
-      <JsonEditor
+      <SchemaBuilder
         key={`${node.id}-request`}
         label="Request schema"
-        hint="JSON"
         value={data.request ?? {}}
         onChange={(v) => updateNode(node.id, { data: { ...data, request: v } })}
+        nodeId={node.id}
         rows={5}
       />
-      <JsonEditor
+      <SchemaBuilder
         key={`${node.id}-response`}
         label="Response schema"
-        hint="JSON"
         value={data.response ?? {}}
         onChange={(v) =>
           updateNode(node.id, { data: { ...data, response: v } })
         }
+        nodeId={node.id}
         rows={5}
       />
       <div className="pb-field">
