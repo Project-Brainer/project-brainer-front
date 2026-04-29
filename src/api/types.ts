@@ -41,6 +41,29 @@ export const FIELD_TYPES = [
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
+/** Schema field types for API Endpoint request/response schemas.
+ *  Extends FieldType with object references to Data Models. */
+export const SCHEMA_FIELD_TYPES = [
+  'string',
+  'number',
+  'boolean',
+  'date',
+  'file',
+  'enum',
+  'object',
+  'array<object>',
+] as const;
+export type SchemaFieldType = (typeof SCHEMA_FIELD_TYPES)[number];
+
+export interface SchemaField {
+  name: string;
+  type: SchemaFieldType;
+  required: boolean;
+  /** Data Model name — only for 'object' / 'array<object>' types. */
+  ref?: string;
+  enumValues?: string[];
+}
+
 export const UI_ELEMENT_KINDS = [
   'button',
   'list',
