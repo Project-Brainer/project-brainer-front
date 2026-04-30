@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainer · Все страницы · Dark</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="colors_and_type.dark.css">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #0E0E0C; }
+  iframe { border: none; display: block; background: #181815; }
+
+  /* Theme switch — fixed, top-right of the canvas */
+  .theme-switch {
+    position: fixed; top: 16px; right: 18px; z-index: 1000;
+    display: inline-flex; align-items: center; gap: 2px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 999px;
+    padding: 3px;
+    box-shadow: var(--shadow-md);
+    font-family: var(--font-sans);
+  }
+  .theme-switch a {
+    text-decoration: none;
+    font-size: 12px; font-weight: 500;
+    color: var(--fg-3);
+    padding: 6px 12px;
+    border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 6px;
+    line-height: 1;
+    transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
+  }
+  .theme-switch a:hover { color: var(--fg-1); }
+  .theme-switch a.active {
+    background: var(--neutral-3);
+    color: var(--fg-1);
+  }
+  .theme-switch svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div class="theme-switch" role="tablist" aria-label="Theme">
+  <a href="Overview.html" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    Light
+  </a>
+  <a href="Overview.dark.html" role="tab" aria-selected="true" class="active">
+    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    Dark
+  </a>
+</div>
+
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" data-presets="react">
+  const F = ({ src, w, h }) => (
+    <iframe src={src} style={{ width: w, height: h, borderRadius: 8 }} />
+  );
+
+  const App = () => (
+    <DesignCanvas>
+      <DCSection id="overview" title="Brainer — все страницы (Dark)" subtitle="Тёмная версия дизайн-системы. Сравни с Light в правом верхнем углу. Двойной-клик или кнопка expand, чтобы открыть любую страницу на весь экран.">
+
+        <DCArtboard id="webapp-edit" label="Web App · Edit mode" width={1280} height={760}>
+          <F src="ui_kits/web_app/index.dark.html" w={1280} h={760}/>
+        </DCArtboard>
+
+        <DCArtboard id="marketing" label="Marketing · Landing" width={1200} height={1800}>
+          <F src="ui_kits/marketing/index.dark.html" w={1200} h={1800}/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="type" title="Type" subtitle="Шрифтовая система: Instrument Serif (display), Geist (UI), Geist Mono (mono)">
+        <DCArtboard id="t-display" label="Display" width={700} height={280}>
+          <F src="preview/type-display.dark.html" w={700} h={280}/>
+        </DCArtboard>
+        <DCArtboard id="t-body" label="Body & UI" width={700} height={280}>
+          <F src="preview/type-body.dark.html" w={700} h={280}/>
+        </DCArtboard>
+        <DCArtboard id="t-mono" label="Mono & Code" width={700} height={220}>
+          <F src="preview/type-mono.dark.html" w={700} h={220}/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="colors" title="Colors" subtitle="Тёплые нейтрали + один сигнальный цвет (electric indigo)">
+        <DCArtboard id="c-n" label="Neutrals · 13 шагов" width={700} height={140}>
+          <F src="preview/colors-neutrals.dark.html" w={700} h={140}/>
+        </DCArtboard>
+        <DCArtboard id="c-s" label="Signal · Electric indigo" width={700} height={200}>
+          <F src="preview/colors-signal.dark.html" w={700} h={200}/>
+        </DCArtboard>
+        <DCArtboard id="c-sem" label="Node type tints" width={700} height={180}>
+          <F src="preview/colors-semantic.dark.html" w={700} h={180}/>
+        </DCArtboard>
+        <DCArtboard id="c-st" label="Status" width={700} height={130}>
+          <F src="preview/colors-status.dark.html" w={700} h={130}/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="spacing" title="Spacing, radii, elevation">
+        <DCArtboard id="sp-1" label="Spacing scale · 4px grid" width={700} height={200}>
+          <F src="preview/spacing-scale.dark.html" w={700} h={200}/>
+        </DCArtboard>
+        <DCArtboard id="sp-2" label="Radii" width={700} height={150}>
+          <F src="preview/spacing-radii.dark.html" w={700} h={150}/>
+        </DCArtboard>
+        <DCArtboard id="sp-3" label="Elevation · 5 слоёв" width={700} height={180}>
+          <F src="preview/spacing-shadows.dark.html" w={700} h={180}/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="components" title="Components">
+        <DCArtboard id="cp-b" label="Buttons" width={700} height={160}>
+          <F src="preview/components-buttons.dark.html" w={700} h={160}/>
+        </DCArtboard>
+        <DCArtboard id="cp-i" label="Inputs" width={700} height={180}>
+          <F src="preview/components-inputs.dark.html" w={700} h={180}/>
+        </DCArtboard>
+        <DCArtboard id="cp-p" label="Pills, methods, connections" width={700} height={220}>
+          <F src="preview/components-pills.dark.html" w={700} h={220}/>
+        </DCArtboard>
+        <DCArtboard id="cp-n" label="Canvas nodes" width={700} height={220}>
+          <F src="preview/components-nodes.dark.html" w={700} h={220}/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="brand" title="Brand">
+        <DCArtboard id="b-l" label="Logo" width={700} height={160}>
+          <F src="preview/brand-logo.dark.html" w={700} h={160}/>
+        </DCArtboard>
+        <DCArtboard id="b-c" label="Canvas background" width={700} height={180}>
+          <F src="preview/brand-canvas.dark.html" w={700} h={180}/>
+        </DCArtboard>
+        <DCArtboard id="b-i" label="Iconography · Lucide" width={700} height={220}>
+          <F src="preview/brand-icons.dark.html" w={700} h={220}/>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

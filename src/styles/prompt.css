@@ -1,0 +1,54 @@
+/* ============================================================
+   Prompt modal
+   ============================================================ */
+
+.pb-prompt-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pb-prompt-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.pb-prompt-tab {
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--fg-3);
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+
+.pb-prompt-tab:hover {
+  color: var(--fg-1);
+}
+
+.pb-prompt-tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.pb-prompt-body {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  max-height: 60vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--fg-1);
+  margin: 0;
+}

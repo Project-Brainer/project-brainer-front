@@ -1,0 +1,108 @@
+/* ============================================================
+   Project-Brainer — Dark theme tokens
+   Same type, spacing, radii, motion as light. Color tokens
+   are inverted with care: warm near-blacks (slight green-gray
+   bias to match light theme's warm paper-white), brightened
+   electric-indigo signal, deeper soft tints for node types.
+   Import this AFTER colors_and_type.css.
+   ============================================================ */
+
+:root {
+  /* ----------------------------------------------------------
+     Neutrals — re-anchored for dark.
+     0 is now the darkest (canvas), 12 is the lightest (display text).
+     Mirrors the light scale's perceptual steps.
+     ---------------------------------------------------------- */
+  --neutral-0:  #0E0E0C;   /* canvas / page bg */
+  --neutral-1:  #131311;   /* surface bg */
+  --neutral-2:  #1A1A17;   /* raised surface */
+  --neutral-3:  #23231F;   /* hairline border */
+  --neutral-4:  #2E2E29;   /* strong border */
+  --neutral-5:  #3D3D37;   /* disabled / faint */
+  --neutral-6:  #5A5A52;   /* muted text */
+  --neutral-7:  #7A7A70;   /* secondary text */
+  --neutral-8:  #999990;   /* body text */
+  --neutral-9:  #BCBCB2;   /* strong text */
+  --neutral-10: #DCDCD3;   /* headings */
+  --neutral-11: #EDEDE6;   /* near-white */
+  --neutral-12: #F7F7F2;   /* pure near-white */
+
+  /* Signal — electric indigo, brightened so it pops on near-black */
+  --signal-0:  #1A1640;
+  --signal-1:  #251E5C;
+  --signal-2:  #382C8C;
+  --signal-3:  #5B45D1;
+  --signal-4:  #7A66F5;
+  --signal-5:  #8D7BFF;   /* primary on dark */
+  --signal-6:  #A89AFF;
+  --signal-7:  #CFC6FF;
+  --signal-8:  #E8E4FF;
+
+  /* Semantic node-type colors — soft tints rebalanced for dark */
+  --node-screen-bg:   #16243F;
+  --node-screen-fg:   #8FB6FF;
+  --node-ui-bg:       #211D44;
+  --node-ui-fg:       #B0A4FF;
+  --node-api-bg:      #142A20;
+  --node-api-fg:      #6FD49B;
+  --node-model-bg:    #2C1F12;
+  --node-model-fg:    #E0A66A;
+  --node-role-bg:     #2A1622;
+  --node-role-fg:     #E59ABF;
+
+  /* Status */
+  --success: #6FD49B;
+  --success-bg: #142A20;
+  --warning: #E0B36A;
+  --warning-bg: #2A2012;
+  --danger:  #F08A82;
+  --danger-bg: #2C1614;
+
+  /* ----------------------------------------------------------
+     Semantic aliases — overridden for dark.
+     Surfaces stay near-black; pure white becomes near-black too.
+     ---------------------------------------------------------- */
+  --bg-canvas:     var(--neutral-0);
+  --bg-surface:    #16161300;          /* set per-component below */
+  --bg-surface:    #181815;            /* cards, panels */
+  --bg-raised:     var(--neutral-1);
+  --bg-sunken:     var(--neutral-0);
+  --bg-hover:      var(--neutral-3);
+  --bg-active:     var(--neutral-4);
+
+  --fg-1: var(--neutral-12);   /* primary text */
+  --fg-2: var(--neutral-10);   /* body */
+  --fg-3: var(--neutral-8);    /* secondary */
+  --fg-4: var(--neutral-7);    /* muted */
+  --fg-5: var(--neutral-6);    /* disabled */
+
+  --border-hairline: var(--neutral-3);
+  --border-default:  var(--neutral-4);
+  --border-strong:   var(--neutral-5);
+  --border-focus:    var(--signal-5);
+
+  --accent:        var(--signal-5);
+  --accent-hover:  var(--signal-4);
+  --accent-soft:   var(--signal-1);
+  --accent-faint:  var(--signal-0);
+
+  /* ----------------------------------------------------------
+     Shadows — on dark we use luminous outer glow + inner stroke
+     instead of dark drop-shadows (which are invisible).
+     ---------------------------------------------------------- */
+  --shadow-xs:   0 0 0 1px rgba(255, 255, 250, 0.04);
+  --shadow-sm:   0 1px 2px 0 rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 250, 0.05);
+  --shadow-md:   0 2px 4px -1px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 250, 0.06);
+  --shadow-lg:   0 4px 12px -2px rgba(0, 0, 0, 0.55), 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 250, 0.06);
+  --shadow-xl:   0 8px 20px -4px rgba(0, 0, 0, 0.6), 0 32px 64px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 250, 0.06);
+  --shadow-node: 0 1px 2px rgba(0,0,0,0.5), 0 4px 12px -2px rgba(0,0,0,0.5), 0 0 0 1px rgba(255, 255, 250, 0.07);
+  --shadow-node-selected: 0 1px 2px rgba(0,0,0,0.5), 0 8px 24px -4px rgba(141, 123, 255, 0.4), 0 0 0 1.5px var(--signal-5);
+  --shadow-focus: 0 0 0 3px rgba(141, 123, 255, 0.30);
+}
+
+/* Scoped override of the .pb-code chip (dark surface) */
+.pb-code {
+  background: var(--neutral-2);
+  border-color: var(--neutral-3);
+  color: var(--neutral-12);
+}

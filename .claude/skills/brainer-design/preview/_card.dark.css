@@ -1,0 +1,17 @@
+/* Dark variant of the shared preview card chrome */
+@import url('../colors_and_type.css');
+@import url('../colors_and_type.dark.css');
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-canvas);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  padding: 20px 24px;
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>
+  body { padding: 0; margin: 0; }
+  .canvas {
+    height: 180px;
+    background: #FDFDFC;
+    background-image: radial-gradient(circle, #E5E5E1 1px, transparent 1px);
+    background-size: 16px 16px;
+    position: relative;
+  }
+  .tag {
+    position: absolute; bottom: 10px; left: 14px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--fg-4);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .tag2 {
+    position: absolute; bottom: 10px; right: 14px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--fg-4);
+  }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="tag">Canvas background</div>
+    <div class="tag2">16px · #E5E5E1 dots on #FDFDFC</div>
+  </div>
+</body>
+</html>

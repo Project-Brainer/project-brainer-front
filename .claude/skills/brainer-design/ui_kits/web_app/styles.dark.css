@@ -1,0 +1,71 @@
+/* Web-app — dark theme overrides.
+   Loaded AFTER colors_and_type.dark.css.
+   Targets the hard-coded whites and shadows in styles.css that
+   don't go through tokens. */
+
+.topbar { background: var(--bg-surface); }
+.topbar-logo img { filter: invert(1) hue-rotate(180deg) brightness(1.1); }
+
+.mode-switch { background: var(--neutral-2); }
+.mode-switch button.active {
+  background: var(--neutral-4);
+  color: var(--fg-1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,250,0.06);
+}
+
+.btn-secondary { background: var(--bg-surface); color: var(--fg-1); border-color: var(--border-default); box-shadow: var(--shadow-xs); }
+.btn-secondary:hover { background: var(--bg-hover); }
+
+.canvas-toolbar { background: var(--bg-surface); border-color: var(--border-default); }
+.canvas-minimap {
+  background: rgba(24, 24, 21, 0.85);
+  border-color: var(--border-default);
+}
+
+.node { background: var(--bg-surface); }
+.node-header { border-bottom: 1px solid var(--neutral-3); }
+
+.node-ui-chip { background: var(--neutral-2); }
+
+/* Method chips — re-tint for dark */
+.method-get    { background: var(--node-api-bg);    color: var(--node-api-fg); }
+.method-post   { background: var(--node-ui-bg);     color: var(--node-ui-fg); }
+.method-patch  { background: var(--warning-bg);     color: var(--warning); }
+.method-delete { background: var(--danger-bg);      color: var(--danger); }
+
+/* Edges */
+.edge-label-bg { fill: var(--bg-surface); stroke: var(--border-default); }
+.edge-label    { fill: var(--fg-2); }
+
+.inspector { background: var(--bg-surface); }
+.input { background: var(--bg-canvas); color: var(--fg-1); border-color: var(--border-default); }
+.input:hover { border-color: var(--border-strong); }
+
+.data-row .type-chip { background: var(--neutral-2); }
+
+/* Sim mode */
+.sim-container {
+  background: var(--neutral-1);
+  background-image: radial-gradient(circle, var(--neutral-3) 1px, transparent 1px);
+}
+.sim-device {
+  background: var(--bg-surface);
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.7), 0 0 0 8px var(--neutral-3), 0 0 0 9px var(--neutral-4);
+}
+.sim-panel, .sim-log, .sim-breadcrumb {
+  background: rgba(24, 24, 21, 0.92);
+  border-color: var(--border-default);
+}
+
+.proto-list-item { background: var(--neutral-2); }
+.proto-list-item .ico { background: var(--accent-soft); color: var(--signal-6); }
+.proto-field input { background: var(--bg-canvas); color: var(--fg-1); border-color: var(--border-default); }
+
+.conn-popover {
+  background: rgba(24, 24, 21, 0.95);
+  border-color: var(--border-default);
+}
+
+/* Edge fallback color */
+.edge-path { stroke: var(--neutral-5); }
+.edge-path.active { stroke: var(--signal-5); }

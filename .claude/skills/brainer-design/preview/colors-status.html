@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .row { display: flex; gap: 10px; }
+  .chip { flex: 1; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 6px; border: 1px solid rgba(17,17,16,0.06); }
+  .title { font-family: var(--font-sans); font-weight: 500; font-size: 13px; }
+  .hex { font-family: var(--font-mono); font-size: 10px; opacity: 0.75; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: 1px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="chip" style="background: #E8F5EE; color: #1F7A4A;">
+      <span class="title"><span class="dot" style="background: #1F7A4A;"></span>Success</span>
+      <span class="hex">E8F5EE / 1F7A4A</span>
+    </div>
+    <div class="chip" style="background: #FFF4E0; color: #9A6A12;">
+      <span class="title"><span class="dot" style="background: #9A6A12;"></span>Warning</span>
+      <span class="hex">FFF4E0 / 9A6A12</span>
+    </div>
+    <div class="chip" style="background: #FCEAE8; color: #B8332A;">
+      <span class="title"><span class="dot" style="background: #B8332A;"></span>Danger</span>
+      <span class="hex">FCEAE8 / B8332A</span>
+    </div>
+  </div>
+</body>
+</html>

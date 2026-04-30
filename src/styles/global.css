@@ -1,0 +1,86 @@
+/* ============================================================
+   Brainer — Global resets + base
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-canvas);
+  color: var(--fg-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--fg-1);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--fg-1);
+}
+
+/* Hide-scrollbar utility */
+.pb-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.pb-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-rotate-180 {
+  transform: rotate(180deg);
+}
+
+.pb-fullpage-empty {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  color: var(--fg-3);
+}
+
+/* Generic dotted canvas background */
+.pb-dotted {
+  background-color: var(--bg-canvas);
+  background-image: radial-gradient(
+    circle,
+    var(--neutral-3) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}

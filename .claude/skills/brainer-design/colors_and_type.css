@@ -1,0 +1,299 @@
+/* ============================================================
+   Project-Brainer — Design Tokens
+   Colors, type, spacing, radii, shadows, motion.
+   Import fonts separately: fonts/fonts.css
+   ============================================================ */
+
+@import url('./fonts/fonts.css');
+
+:root {
+  /* ----------------------------------------------------------
+     COLOR — Base palette
+     Warm near-neutrals (slight green-gray bias) + electric indigo signal.
+     Named scales read 0 (lightest) → 12 (darkest).
+     ---------------------------------------------------------- */
+
+  /* Neutrals (warm gray, slight green bias) */
+  --neutral-0:  #FDFDFC;   /* canvas / page bg (warm paper white) */
+  --neutral-1:  #F7F7F5;   /* surface bg */
+  --neutral-2:  #EFEFEC;   /* raised surface */
+  --neutral-3:  #E5E5E1;   /* hairline border */
+  --neutral-4:  #D4D4CE;   /* strong border */
+  --neutral-5:  #B8B8B0;   /* disabled text, faint icon */
+  --neutral-6:  #8E8E84;   /* muted text */
+  --neutral-7:  #6B6B62;   /* secondary text */
+  --neutral-8:  #494943;   /* body text */
+  --neutral-9:  #2F2F2B;   /* strong text */
+  --neutral-10: #1C1C1A;   /* headings */
+  --neutral-11: #111110;   /* near-black */
+  --neutral-12: #0A0A09;   /* pure near-black / logo */
+
+  /* Signal — Electric indigo. Used for: connections, active nodes, logo mark,
+     focus rings, links. Use sparingly. */
+  --signal-0:  #F4F2FF;
+  --signal-1:  #E8E4FF;
+  --signal-2:  #CFC6FF;
+  --signal-3:  #A89AFF;
+  --signal-4:  #7A66F5;
+  --signal-5:  #5B42E8;   /* primary */
+  --signal-6:  #4A32D1;
+  --signal-7:  #3A24A8;
+  --signal-8:  #2A1A7A;
+
+  /* Semantic node-type colors — subdued, used as tints on badges/icons,
+     not as full fills. Each has a bg (soft tint) and fg (deep). */
+  --node-screen-bg:   #EAF2FF;
+  --node-screen-fg:   #1F4DB8;
+  --node-ui-bg:       #F1ECFF;
+  --node-ui-fg:       #4A32D1;
+  --node-api-bg:      #E8F5EE;
+  --node-api-fg:      #1F7A4A;
+  --node-model-bg:    #FFF1E4;
+  --node-model-fg:    #9A4A12;
+  --node-role-bg:     #FCE8F0;
+  --node-role-fg:     #9A2A5C;
+
+  /* Status */
+  --success: #1F7A4A;
+  --success-bg: #E8F5EE;
+  --warning: #9A6A12;
+  --warning-bg: #FFF4E0;
+  --danger:  #B8332A;
+  --danger-bg: #FCEAE8;
+
+  /* ----------------------------------------------------------
+     COLOR — Semantic aliases
+     Use these in components, not the raw scale values.
+     ---------------------------------------------------------- */
+  --bg-canvas:     var(--neutral-0);   /* app canvas */
+  --bg-surface:    #FFFFFF;            /* cards, panels */
+  --bg-raised:     var(--neutral-1);   /* sidebars, toolbars */
+  --bg-sunken:     var(--neutral-2);   /* inset wells, input bg */
+  --bg-hover:      var(--neutral-2);
+  --bg-active:     var(--neutral-3);
+
+  --fg-1: var(--neutral-11);   /* primary text (headings) */
+  --fg-2: var(--neutral-9);    /* body text */
+  --fg-3: var(--neutral-7);    /* secondary text */
+  --fg-4: var(--neutral-6);    /* muted / placeholder */
+  --fg-5: var(--neutral-5);    /* disabled / faintest */
+
+  --border-hairline: var(--neutral-3);
+  --border-default:  var(--neutral-4);
+  --border-strong:   var(--neutral-5);
+  --border-focus:    var(--signal-5);
+
+  --accent:        var(--signal-5);
+  --accent-hover:  var(--signal-6);
+  --accent-soft:   var(--signal-1);
+  --accent-faint:  var(--signal-0);
+
+  /* ----------------------------------------------------------
+     TYPE — Families
+     ---------------------------------------------------------- */
+  --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-sans:    'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:    'Geist Mono', 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+
+  /* ----------------------------------------------------------
+     TYPE — Scale (tight, UI-focused)
+     ---------------------------------------------------------- */
+  --text-2xs: 10px;
+  --text-xs:  11px;
+  --text-sm:  12px;
+  --text-base:13px;   /* UI default */
+  --text-md:  14px;
+  --text-lg:  16px;
+  --text-xl:  20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+  --text-4xl: 44px;
+  --text-5xl: 64px;
+  --text-6xl: 88px;
+
+  --lh-tight:  1.1;
+  --lh-snug:   1.25;
+  --lh-normal: 1.45;
+  --lh-relaxed:1.6;
+
+  --tracking-tight:  -0.02em;
+  --tracking-snug:   -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.02em;
+  --tracking-caps:   0.08em;
+
+  /* ----------------------------------------------------------
+     SPACING — 4px grid
+     ---------------------------------------------------------- */
+  --space-0:  0;
+  --space-1:  2px;
+  --space-2:  4px;
+  --space-3:  8px;
+  --space-4:  12px;
+  --space-5:  16px;
+  --space-6:  20px;
+  --space-7:  24px;
+  --space-8:  32px;
+  --space-9:  40px;
+  --space-10: 48px;
+  --space-11: 64px;
+  --space-12: 96px;
+
+  /* ----------------------------------------------------------
+     RADII
+     ---------------------------------------------------------- */
+  --radius-xs:  3px;
+  --radius-sm:  5px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 20px;
+  --radius-pill:999px;
+
+  /* ----------------------------------------------------------
+     SHADOWS — soft, layered, warm-tinted
+     ---------------------------------------------------------- */
+  --shadow-xs:   0 1px 0 0 rgba(17, 17, 16, 0.04);
+  --shadow-sm:   0 1px 2px 0 rgba(17, 17, 16, 0.05), 0 0 0 1px rgba(17, 17, 16, 0.04);
+  --shadow-md:   0 2px 4px -1px rgba(17, 17, 16, 0.06), 0 4px 8px -2px rgba(17, 17, 16, 0.04), 0 0 0 1px rgba(17, 17, 16, 0.04);
+  --shadow-lg:   0 4px 8px -2px rgba(17, 17, 16, 0.06), 0 12px 24px -6px rgba(17, 17, 16, 0.08);
+  --shadow-xl:   0 8px 16px -4px rgba(17, 17, 16, 0.08), 0 24px 48px -12px rgba(17, 17, 16, 0.12);
+  --shadow-node: 0 1px 2px rgba(17,17,16,0.04), 0 4px 12px -2px rgba(17,17,16,0.06), 0 0 0 1px rgba(17,17,16,0.06);
+  --shadow-node-selected: 0 1px 2px rgba(17,17,16,0.04), 0 8px 20px -4px rgba(91,66,232,0.18), 0 0 0 1.5px var(--signal-5);
+  --shadow-focus: 0 0 0 3px rgba(91, 66, 232, 0.22);
+
+  /* ----------------------------------------------------------
+     MOTION
+     ---------------------------------------------------------- */
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);   /* smooth out */
+  --ease-in:    cubic-bezier(0.64, 0, 0.78, 0);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring:cubic-bezier(0.34, 1.56, 0.64, 1);/* gentle overshoot */
+
+  --dur-fast:   120ms;
+  --dur-base:   180ms;
+  --dur-slow:   260ms;
+  --dur-slower: 400ms;
+}
+
+/* ============================================================
+   Semantic element styles
+   Attach these classes (or extend them in components).
+   ============================================================ */
+
+.pb-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+
+.pb-h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-5xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+
+.pb-h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-4xl);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+
+.pb-h3 {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--text-xl);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-snug);
+  color: var(--fg-1);
+}
+
+.pb-h4 {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--text-lg);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+}
+
+.pb-body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--text-md);
+  line-height: var(--lh-normal);
+  color: var(--fg-2);
+}
+
+.pb-body-sm {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--fg-2);
+}
+
+.pb-ui {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--text-base);
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: var(--fg-1);
+}
+
+.pb-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  line-height: 1.2;
+  color: var(--fg-3);
+}
+
+.pb-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--text-xs);
+  line-height: 1;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.pb-mono {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--fg-2);
+}
+
+.pb-code {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  padding: 2px 5px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  color: var(--neutral-10);
+}
+
+/* Focus ring — applied to any interactive element */
+.pb-focusable:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-color: var(--border-focus);
+}

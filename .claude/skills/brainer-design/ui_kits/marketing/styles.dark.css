@@ -1,0 +1,90 @@
+/* Marketing — dark theme overrides.
+   Loaded AFTER colors_and_type.dark.css.
+   Marketing uses inline hex colors in the hero mini-canvas
+   (style="background: #EAF2FF" etc) that we re-tint here via
+   attribute selectors so the inline styles can be overridden. */
+
+.nav { background: rgba(14, 14, 12, 0.85); }
+.nav-logo { filter: invert(1) hue-rotate(180deg) brightness(1.1); }
+
+.hero-eyebrow { background: var(--bg-surface); border-color: var(--border-default); }
+
+.btn-secondary { background: var(--bg-surface); color: var(--fg-1); border-color: var(--border-default); box-shadow: var(--shadow-xs); }
+.btn-secondary:hover { background: var(--bg-hover); }
+
+/* Product preview frame */
+.preview-frame { background: var(--bg-surface); border-color: var(--border-default); }
+.preview-frame-top { background: var(--neutral-2); border-bottom-color: var(--border-default); }
+.preview-frame-top .light { background: var(--neutral-4); }
+
+/* Mini-canvas nodes use inline-styled headers — re-tint by attribute selector. */
+.mini-node { background: var(--bg-surface); box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 4px 12px -2px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,250,0.07); }
+.mini-node .h { border-bottom-color: var(--neutral-3); }
+
+/* Screen header (#EAF2FF / #1F4DB8) */
+.mini-node .h[style*="EAF2FF"] {
+  background: var(--node-screen-bg) !important;
+  color: var(--node-screen-fg) !important;
+}
+.mini-node .h[style*="EAF2FF"] .d { background: var(--node-screen-fg) !important; }
+
+/* API header (#E8F5EE / #1F7A4A) */
+.mini-node .h[style*="E8F5EE"] {
+  background: var(--node-api-bg) !important;
+  color: var(--node-api-fg) !important;
+}
+.mini-node .h[style*="E8F5EE"] .d { background: var(--node-api-fg) !important; }
+
+/* Data Model header (#FFF1E4 / #9A4A12) */
+.mini-node .h[style*="FFF1E4"] {
+  background: var(--node-model-bg) !important;
+  color: var(--node-model-fg) !important;
+}
+.mini-node .h[style*="FFF1E4"] .d { background: var(--node-model-fg) !important; }
+
+/* Inline POST chip on the API node */
+.mini-node .b span[style*="F1ECFF"] {
+  background: var(--node-ui-bg) !important;
+  color: var(--node-ui-fg) !important;
+}
+
+/* SVG arrows — original strokes are #B8B8B0 / #5B42E8.
+   Cleanest fix: mute the muted ones, leave the accent alone (already overridden via tokens-or-near). */
+.preview-frame-body svg path[stroke="#B8B8B0"] { stroke: var(--neutral-5); }
+.preview-frame-body svg marker#arr path { fill: var(--neutral-5); }
+.preview-frame-body svg path[stroke="#5B42E8"] { stroke: var(--signal-5); }
+.preview-frame-body svg marker#arr-a path { fill: var(--signal-5); }
+
+/* Logos band */
+section.block { border-top-color: var(--border-hairline); }
+
+/* Feature cards */
+.feature-card { background: var(--bg-surface); border-color: var(--border-default); }
+.feature-card .ic { background: var(--accent-soft); color: var(--signal-6); }
+
+/* Inverted "code" panel — invert again on dark so it stays visually distinct (lighter than surface) */
+.split .code {
+  background: var(--neutral-3);
+  color: var(--neutral-11);
+  border-color: var(--neutral-4);
+}
+.split .code .c { color: var(--neutral-7); }
+.split .code .k { color: var(--signal-6); }
+.split .code .s { color: #9BE29F; }
+
+/* Quote */
+.quote-block { border-top-color: var(--border-hairline); }
+.quote-author .avatar { background: var(--neutral-3); color: var(--fg-2); }
+
+/* CTA — was a near-black slab. On dark we make it a lighter slab so it pops. */
+.cta {
+  background: var(--neutral-3);
+  color: var(--neutral-11);
+}
+.cta h2 { color: var(--fg-1); }
+.cta p { color: var(--fg-3); }
+.cta .btn-primary { background: var(--signal-5); color: #fff; }
+.cta .btn-primary:hover { background: var(--signal-4); }
+
+/* Footer */
+.footer { border-top-color: var(--border-hairline); }
