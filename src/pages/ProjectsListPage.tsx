@@ -12,7 +12,9 @@ export function ProjectsListPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [importingFor, setImportingFor] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,14 +30,9 @@ export function ProjectsListPage() {
     refresh();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this project? Nodes and edges go with it.')) return;
-    try {
-      await projectsApi.remove(id);
-      await refresh();
-    } catch (err) {
-      setError((err as Error).message);
-    }
+  const showSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(null), 4000);
   };
 
   const handleDuplicate = async (project: Project) => {
@@ -144,6 +141,9 @@ export function ProjectsListPage() {
         </p>
 
         {error && <div className="pb-banner pb-banner--danger">{error}</div>}
+        {successMessage && (
+          <div className="pb-banner pb-banner--success">{successMessage}</div>
+        )}
 
         <div className="pb-projects-grid">
           {projects === null ? (
@@ -199,7 +199,7 @@ export function ProjectsListPage() {
                   <Button
                     size="sm"
                     variant="danger"
-                    onClick={() => handleDelete(p.id)}
+                    onClick={() => setDeletingProject(p)}
                     iconLeft="trash"
                   >
                     Delete
@@ -225,6 +225,19 @@ export function ProjectsListPage() {
           onCreated={(p) => {
             setCreating(false);
             navigate(`/projects/${p.id}`);
+          }}
+        />
+      )}
+
+      {deletingProject && (
+        <DeleteProjectModal
+          project={deletingProject}
+          onClose={() => setDeletingProject(null)}
+          onDeleted={async () => {
+            const name = deletingProject.name;
+            setDeletingProject(null);
+            await refresh();
+            showSuccess(`Проект «${name}» удалён.`);
           }}
         />
       )}
@@ -293,6 +306,70 @@ function CreateProjectModal({
         onChange={(e) => setDescription(e.target.value)}
       />
       {error && <div className="pb-banner pb-banner--danger">{error}</div>}
+    </Modal>
+  );
+}
+
+function DeleteProjectModal({
+  project,
+  onClose,
+  onDeleted,
+}: {
+  project: Project;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      await projectsApi.remove(project.id);
+      onDeleted();
+    } catch (err) {
+      setError((err as Error).message);
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={deleting ? () => {} : onClose}
+      title="Удалить проект?"
+      width={440}
+      footer={
+        <>
+          <Button
+            variant="ghost"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            disabled={deleting}
+            onClick={onClose}
+          >
+            Отмена
+          </Button>
+          <Button
+            variant="danger"
+            loading={deleting}
+            onClick={handleDelete}
+          >
+            Удалить
+          </Button>
+        </>
+      }
+    >
+      <p className="pb-body" style={{ margin: 0 }}>
+        Проект <strong>{project.name}</strong> будет удалён вместе со всеми
+        узлами и связями. Это действие необратимо.
+      </p>
+      {error && (
+        <div className="pb-banner pb-banner--danger" style={{ marginTop: 'var(--space-4)', marginBottom: 0 }}>
+          {error}
+        </div>
+      )}
     </Modal>
   );
 }
