@@ -115,8 +115,6 @@ export interface GraphState {
   loadBranchGraph: (projectId: string, branchId: string) => Promise<void>;
 }
 
-let saveAbort: AbortController | null = null;
-
 /**
  * Re-attach client-only pending nodes (and their edges) onto the graph the
  * server returned from replaceGraph — those weren't sent in the payload, so
@@ -150,89 +148,106 @@ export const useGraphStore = create<GraphState>()((set, get) => {
   // Lives outside store state — purely a deduplication guard.
   const promoting = new Set<string>();
 
-  // Bumped on every local mutation that schedules a save. persistNow snapshots
-  // it before sending and re-checks on response: if the version moved on, the
-  // user has made newer edits, so the server's response is stale and we must
-  // NOT overwrite local state with it (otherwise the new edit visibly snaps
-  // back). The next debounced save will reconcile.
+  // Bumped on every local mutation that schedules a save. The save loop
+  // snapshots it before each PUT and re-checks on response: if the version
+  // moved on, the user has made newer edits, so the server's response is
+  // stale and we must NOT overwrite local state with it. The loop then
+  // sends another PUT with the latest state.
   let mutationVersion = 0;
 
-  const persistNow = async () => {
-    const { project, nodes, edges, pendingNodeIds } = get();
-    if (!project) return;
-    if (saveAbort) saveAbort.abort();
-    saveAbort = new AbortController();
-    const versionAtSend = mutationVersion;
+  // Save serialisation — only one PUT in flight at a time. While a save is
+  // running, additional `markDirty()` calls just bump mutationVersion; the
+  // running loop notices and re-runs with the latest state on its next pass.
+  // Net effect: a burst of fast edits collapses into "first save (in
+  // progress) + one final save with the latest state", and concurrent
+  // out-of-order responses can't overwrite fresh local edits.
+  let saveInFlight = false;
 
+  const persistNow = async () => {
+    if (saveInFlight) return;
+    if (!get().project) return;
+
+    saveInFlight = true;
     set({ saveStatus: 'saving', lastSaveError: null });
 
-    const pending = new Set(pendingNodeIds);
-    const persistedNodes = nodes.filter((n) => !pending.has(n.id));
-    const persistedEdges = edges.filter(
-      (e) => !pending.has(e.sourceId) && !pending.has(e.targetId),
-    );
-
-    const body: ReplaceGraphBody = {
-      nodes: persistedNodes.map((n) => ({
-        id: n.id,
-        type: n.type,
-        name: n.name,
-        position: n.position,
-        data: n.data,
-      })),
-      edges: persistedEdges.map((e) => ({
-        id: e.id,
-        sourceId: e.sourceId,
-        targetId: e.targetId,
-        type: e.type,
-        label: e.label ?? undefined,
-        data: e.data,
-      })),
-      viewport: project.viewport,
-    };
-
     try {
-      const activeBranchId = useBranchStore.getState().activeBranchId;
-      if (activeBranchId) {
-        // Branch save — backend returns BranchGraph (no project field).
-        // Keep the existing project metadata; only reconcile nodes/edges.
-        const updated = await branchesApi.replaceGraph(project.id, activeBranchId, body);
-        if (mutationVersion !== versionAtSend) {
-          // Local edits landed during the request — don't overwrite them.
-          return;
-        }
-        const merged = mergePendingIntoServerGraph(
-          get(),
-          updated.nodes as AnyNode[],
-          updated.edges as Edge[],
+      // Loop until the local state matches what we just persisted. Each
+      // iteration sends one PUT with the freshest store snapshot.
+      while (true) {
+        const { project, nodes, edges, pendingNodeIds } = get();
+        if (!project) break;
+
+        const versionAtSend = mutationVersion;
+
+        const pending = new Set(pendingNodeIds);
+        const persistedNodes = nodes.filter((n) => !pending.has(n.id));
+        const persistedEdges = edges.filter(
+          (e) => !pending.has(e.sourceId) && !pending.has(e.targetId),
         );
-        set({
-          nodes: merged.nodes,
-          edges: merged.edges,
-          saveStatus: 'saved',
-          lastSavedAt: Date.now(),
-        });
-      } else {
-        // Root save — backend returns full ProjectGraph including project.
-        const updated = await graphApi.replace(project.id, body);
-        if (mutationVersion !== versionAtSend) {
-          return;
+
+        const body: ReplaceGraphBody = {
+          nodes: persistedNodes.map((n) => ({
+            id: n.id,
+            type: n.type,
+            name: n.name,
+            position: n.position,
+            data: n.data,
+          })),
+          edges: persistedEdges.map((e) => ({
+            id: e.id,
+            sourceId: e.sourceId,
+            targetId: e.targetId,
+            type: e.type,
+            label: e.label ?? undefined,
+            data: e.data,
+          })),
+          viewport: project.viewport,
+        };
+
+        const activeBranchId = useBranchStore.getState().activeBranchId;
+        if (activeBranchId) {
+          const updated = await branchesApi.replaceGraph(
+            project.id,
+            activeBranchId,
+            body,
+          );
+          if (mutationVersion !== versionAtSend) continue;
+          const merged = mergePendingIntoServerGraph(
+            get(),
+            updated.nodes as AnyNode[],
+            updated.edges as Edge[],
+          );
+          set({
+            nodes: merged.nodes,
+            edges: merged.edges,
+            saveStatus: 'saved',
+            lastSavedAt: Date.now(),
+          });
+        } else {
+          const updated = await graphApi.replace(project.id, body);
+          if (mutationVersion !== versionAtSend) continue;
+          const merged = mergePendingIntoServerGraph(
+            get(),
+            updated.nodes,
+            updated.edges,
+          );
+          set({
+            project: updated.project,
+            nodes: merged.nodes,
+            edges: merged.edges,
+            saveStatus: 'saved',
+            lastSavedAt: Date.now(),
+          });
         }
-        const merged = mergePendingIntoServerGraph(get(), updated.nodes, updated.edges);
-        set({
-          project: updated.project,
-          nodes: merged.nodes,
-          edges: merged.edges,
-          saveStatus: 'saved',
-          lastSavedAt: Date.now(),
-        });
+        break;
       }
     } catch (err) {
-      if ((err as Error).name === 'AbortError') return;
       set({
         saveStatus: 'error',
         lastSaveError: (err as Error).message,
       });
+    } finally {
+      saveInFlight = false;
     }
   };
 
@@ -330,8 +345,6 @@ export const useGraphStore = create<GraphState>()((set, get) => {
 
     reset() {
       scheduleSave.cancel();
-      saveAbort?.abort();
-      saveAbort = null;
       promoting.clear();
       set({
         project: null,
