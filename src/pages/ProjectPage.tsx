@@ -195,7 +195,10 @@ function Sidebar() {
                 </span>
                 <button
                   className="pb-sidebar__add-btn"
-                  onClick={() => createNode({ type })}
+                  onClick={async () => {
+                    const created = await createNode({ type });
+                    if (created) selectNode(created.id);
+                  }}
                   title={`Add ${meta.label}`}
                 >
                   <Icon name="plus" size={12} />

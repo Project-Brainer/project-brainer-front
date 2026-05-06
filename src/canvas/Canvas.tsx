@@ -239,9 +239,10 @@ function CanvasInner() {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
       });
-      await createNode({ type: type as NodeType, position: point });
+      const created = await createNode({ type: type as NodeType, position: point });
+      if (created) selectNode(created.id);
     },
-    [createNode],
+    [createNode, selectNode],
   );
 
   return (
