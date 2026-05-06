@@ -39,6 +39,12 @@ export function EdgeInspector({ edge }: { edge: Edge }) {
   const source = nodes.find((n) => n.id === edge.sourceId);
   const target = nodes.find((n) => n.id === edge.targetId);
 
+  const defaultLabel = edgeTypeLabel(edge.type);
+  // Treat the type's default text as "no label set" — saving the placeholder
+  // verbatim would force the user to clear it manually if they later change
+  // the edge type. Keeping null means the canvas always tracks the type.
+  const labelValue = edge.label === defaultLabel ? '' : (edge.label ?? '');
+
   return (
     <div className="pb-inspector">
       <header className="pb-inspector__head">
@@ -79,12 +85,14 @@ export function EdgeInspector({ edge }: { edge: Edge }) {
 
       <Input
         label="Label"
-        hint="optional"
-        placeholder={edgeTypeLabel(edge.type)}
-        value={edge.label ?? ''}
-        onChange={(e) =>
-          updateEdge(edge.id, { label: e.target.value || null })
-        }
+        hint={`leave empty to show "${defaultLabel}"`}
+        placeholder={`default: ${defaultLabel}`}
+        value={labelValue}
+        onChange={(e) => {
+          const raw = e.target.value;
+          const next = raw && raw !== defaultLabel ? raw : null;
+          updateEdge(edge.id, { label: next });
+        }}
       />
 
       <div className="pb-divider" />

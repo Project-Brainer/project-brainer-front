@@ -63,7 +63,7 @@ export function SlotsEditor({
   const add = () => {
     const next: Slot = {
       id: uuid(),
-      name: nextDefaultName(slots),
+      name: nextDefaultName(slots, nodeType, uiKind),
       type: 'string',
       source: defaultSourceForKind(availableSources[0]),
     };
@@ -388,11 +388,42 @@ function availableSourceKinds(
   return base;
 }
 
-function nextDefaultName(existing: Slot[]): string {
+/**
+ * Pick a fresh slot name. Type-aware base ("value" on inputs, "input" on
+ * actions, "state" on screens, etc.) keeps the first slot self-explanatory
+ * and only falls back to numeric suffixes on collision. The legacy "slot"
+ * fallback uses the historical 1-indexed scheme so existing graphs keep
+ * producing slot1, slot2, … as before.
+ */
+function nextDefaultName(
+  existing: Slot[],
+  nodeType: NodeType,
+  uiKind?: UiElementKind,
+): string {
   const used = new Set(existing.map((s) => s.name));
-  for (let i = 1; i < 10_000; i += 1) {
-    const candidate = `slot${i}`;
+  const base = defaultBaseName(nodeType, uiKind);
+  if (base === 'slot') {
+    for (let i = 1; i < 10_000; i += 1) {
+      const candidate = `slot${i}`;
+      if (!used.has(candidate)) return candidate;
+    }
+    return `slot${uuid().slice(0, 6)}`;
+  }
+  if (!used.has(base)) return base;
+  for (let i = 2; i < 10_000; i += 1) {
+    const candidate = `${base}${i}`;
     if (!used.has(candidate)) return candidate;
   }
-  return `slot${uuid().slice(0, 6)}`;
+  return `${base}${uuid().slice(0, 6)}`;
+}
+
+function defaultBaseName(nodeType: NodeType, uiKind?: UiElementKind): string {
+  if (nodeType === 'UI_ELEMENT') {
+    if (uiKind === 'input') return 'value';
+    if (uiKind === 'form') return 'data';
+    return 'slot';
+  }
+  if (nodeType === 'ACTION') return 'input';
+  if (nodeType === 'SCREEN') return 'state';
+  return 'slot';
 }

@@ -179,11 +179,27 @@
 .pb-node__slot-icon {
   color: var(--fg-4);
 }
+.pb-node__slot-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .pb-node__slot-name {
   color: var(--fg-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.pb-node__slot-target {
+  color: var(--fg-4);
+  font-size: var(--text-2xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pb-node__slot-target--missing {
+  color: var(--warning, var(--danger));
+  font-style: italic;
 }
 .pb-node__slot-type {
   color: var(--fg-4);
