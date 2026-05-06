@@ -197,7 +197,10 @@ function Sidebar() {
                   className="pb-sidebar__add-btn"
                   onClick={async () => {
                     const created = await createNode({ type });
-                    if (created) selectNode(created.id);
+                    if (created) {
+                      selectNode(created.id);
+                      focusNode(created.id);
+                    }
                   }}
                   title={`Add ${meta.label}`}
                 >

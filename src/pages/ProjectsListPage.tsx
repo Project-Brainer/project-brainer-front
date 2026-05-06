@@ -344,7 +344,6 @@ function DeleteProjectModal({
         <>
           <Button
             variant="ghost"
-            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             disabled={deleting}
             onClick={onClose}

@@ -139,11 +139,19 @@ export const useGraphStore = create<GraphState>()((set, get) => {
   // Lives outside store state — purely a deduplication guard.
   const promoting = new Set<string>();
 
+  // Bumped on every local mutation that schedules a save. persistNow snapshots
+  // it before sending and re-checks on response: if the version moved on, the
+  // user has made newer edits, so the server's response is stale and we must
+  // NOT overwrite local state with it (otherwise the new edit visibly snaps
+  // back). The next debounced save will reconcile.
+  let mutationVersion = 0;
+
   const persistNow = async () => {
     const { project, nodes, edges, pendingNodeIds } = get();
     if (!project) return;
     if (saveAbort) saveAbort.abort();
     saveAbort = new AbortController();
+    const versionAtSend = mutationVersion;
 
     set({ saveStatus: 'saving', lastSaveError: null });
 
@@ -178,6 +186,10 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         // Branch save — backend returns BranchGraph (no project field).
         // Keep the existing project metadata; only reconcile nodes/edges.
         const updated = await branchesApi.replaceGraph(project.id, activeBranchId, body);
+        if (mutationVersion !== versionAtSend) {
+          // Local edits landed during the request — don't overwrite them.
+          return;
+        }
         const merged = mergePendingIntoServerGraph(
           get(),
           updated.nodes as AnyNode[],
@@ -192,6 +204,9 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       } else {
         // Root save — backend returns full ProjectGraph including project.
         const updated = await graphApi.replace(project.id, body);
+        if (mutationVersion !== versionAtSend) {
+          return;
+        }
         const merged = mergePendingIntoServerGraph(get(), updated.nodes, updated.edges);
         set({
           project: updated.project,
@@ -211,6 +226,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
   };
 
   const markDirty = () => {
+    mutationVersion++;
     set({ saveStatus: 'pending' });
     scheduleSave();
   };
