@@ -1,0 +1,56 @@
+name: Deploy Prod
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.PROD_SSH_HOST }}"         || (echo "PROD_SSH_HOST is missing" && exit 1)
+          test -n "${{ secrets.PROD_SSH_USER }}"         || (echo "PROD_SSH_USER is missing" && exit 1)
+          test -n "${{ secrets.PROD_SSH_PRIVATE_KEY }}"  || (echo "PROD_SSH_PRIVATE_KEY is missing" && exit 1)
+          test -n "${{ secrets.PROD_SSH_PORT }}"         || (echo "PROD_SSH_PORT is missing" && exit 1)
+          test -n "${{ secrets.PROD_FRONT_DIR }}"        || (echo "PROD_FRONT_DIR is missing" && exit 1)
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # Relative URL — nginx proxies /api/ to the backend on the same VPS
+          VITE_API_URL: /api/v1
+
+      - name: Ensure target dir exists on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT }}
+          script: mkdir -p ${{ secrets.PROD_FRONT_DIR }}
+
+      - name: Deploy static files to VPS
+        run: |
+          echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+          rsync -avz --delete \
+            -e "ssh -p ${{ secrets.PROD_SSH_PORT }} -i /tmp/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ \
+            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:${{ secrets.PROD_FRONT_DIR }}/
+          rm -f /tmp/deploy_key
