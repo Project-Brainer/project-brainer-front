@@ -51,13 +51,14 @@ function nodeForFlow(
   node: AnyNode,
   selected: boolean,
   related: boolean,
+  dataflowRelated: boolean,
   parentScreenId?: string,
 ): RFNode {
   const rf: RFNode = {
     id: node.id,
     type: 'brainer',
     position: node.position,
-    data: { node, selected, related },
+    data: { node, selected, related, dataflowRelated },
     selected,
   };
   if (parentScreenId) {
@@ -122,10 +123,12 @@ function CanvasInner() {
     }
   }, [initialViewport]);
 
-  // Set of node ids whose data flows to/from the currently selected node;
-  // those get a soft highlight on the canvas so you see "what's wired".
-  const dataflowRelated = useMemo<Set<string>>(() => {
-    if (!selectedNodeId) return new Set();
+  // Two highlight tiers around the selected node: `related` covers any
+  // structural neighbour (so the user sees what's wired even on graphs
+  // without dataflow markup yet), `dataflow` is the strict subset that
+  // actually exchanges data via slot bindings or CALLS request bindings.
+  const { related, dataflow } = useMemo(() => {
+    if (!selectedNodeId) return { related: new Set<string>(), dataflow: new Set<string>() };
     return relatedNodeIds(selectedNodeId, nodes, edges);
   }, [selectedNodeId, nodes, edges]);
 
@@ -150,11 +153,12 @@ function CanvasInner() {
       return nodeForFlow(
         n,
         n.id === selectedNodeId,
-        dataflowRelated.has(n.id),
+        related.has(n.id),
+        dataflow.has(n.id),
         parentScreenId,
       );
     });
-  }, [nodes, selectedNodeId, dataflowRelated]);
+  }, [nodes, selectedNodeId, related, dataflow]);
 
   const rfEdges = useMemo<RFEdge[]>(() => {
     const real = edges.map((e) => edgeForFlow(e, e.id === selectedEdgeId));

@@ -119,6 +119,32 @@ export function defaultNodeName(type: NodeType, existingCount: number): string {
   return `${base} ${existingCount + 1}`;
 }
 
+/**
+ * Disambiguating label for a node — used in pickers where two nodes can
+ * legitimately share a name (a UI Element button "Login" + an UI Element
+ * input "Login"). Appends a kind/method/path suffix where relevant.
+ */
+export function nodePickerLabel(node: AnyNode): string {
+  const meta = NODE_META[node.type as NodeType];
+  const prefix = `${meta.shortLabel} · ${node.name || 'Untitled'}`;
+  switch (node.type) {
+    case 'UI_ELEMENT': {
+      const kind = (node.data as { kind?: string }).kind;
+      return kind ? `${prefix} (${kind})` : prefix;
+    }
+    case 'ACTION': {
+      const kind = (node.data as { kind?: string }).kind;
+      return kind ? `${prefix} (${kind})` : prefix;
+    }
+    case 'API_ENDPOINT': {
+      const d = node.data as { method?: string; path?: string };
+      return d?.method && d?.path ? `${prefix} (${d.method} ${d.path})` : prefix;
+    }
+    default:
+      return prefix;
+  }
+}
+
 /** Narrow an AnyNode to a specific type. */
 export function isNodeOfType<T extends NodeType>(
   node: AnyNode,

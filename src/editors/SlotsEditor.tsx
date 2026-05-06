@@ -13,6 +13,7 @@ import { SLOT_TYPES } from '../api/types';
 import { Button } from '../components/Button';
 import { FieldShell, Input, Select } from '../components/Field';
 import { Icon } from '../components/Icon';
+import { nodePickerLabel } from '../lib/nodeMeta';
 import { uuid } from '../lib/uuid';
 import { useGraphStore } from '../store/graphStore';
 
@@ -245,7 +246,7 @@ function BindingPicker({
     { value: '', label: '— pick a node —' },
     ...otherNodes
       .filter((n) => nodeSlots(n).length > 0)
-      .map((n) => ({ value: n.id, label: `${n.type.toLowerCase()} · ${n.name}` })),
+      .map((n) => ({ value: n.id, label: nodePickerLabel(n) })),
   ];
   const slotOptions = [
     { value: '', label: sourceSlots.length === 0 ? '— no slots —' : '— pick a slot —' },
@@ -283,7 +284,7 @@ function ApiResponsePicker({
 }) {
   const endpointOptions = [
     { value: '', label: '— pick an endpoint —' },
-    ...apiNodes.map((n) => ({ value: n.id, label: n.name })),
+    ...apiNodes.map((n) => ({ value: n.id, label: nodePickerLabel(n) })),
   ];
 
   return (

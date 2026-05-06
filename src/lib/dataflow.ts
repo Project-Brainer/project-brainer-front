@@ -1,15 +1,15 @@
 /**
- * Compute the set of nodes that participate in the same data-flow context
- * as the given node. Used by the canvas to subtly highlight everything a
- * selected node either consumes data from or feeds data to, so the user
- * can see "what's wired into this".
+ * Highlight context around the selected node. Two tiers:
  *
- * Includes:
- *  - nodes whose slots reference `selected` via binding source
- *  - nodes that `selected`'s slots reference via binding source
- *  - API endpoints `selected` listens to via apiResponse source, and the
- *    nodes that listen to `selected`'s response if selected is an endpoint
- *  - source/target peers on CALLS edges that carry requestBindings
+ *  - `related` — every node connected to the selected one by ANY edge plus
+ *    every node referenced by slot sources / consumed by CALLS request
+ *    bindings. This is the "what's wired into this" set, and is shown with
+ *    a subtle border accent so it's useful even on graphs that don't yet
+ *    have data-flow markup.
+ *  - `dataflow` — strict subset that participates in the data-flow graph
+ *    (binding / apiResponse slot sources, CALLS edges with non-empty
+ *    requestBindings). These get a stronger ring so the user can tell
+ *    "where data actually goes" apart from "what is structurally near".
  */
 import type {
   AnyNode,
@@ -26,48 +26,71 @@ function nodeSlots(node: AnyNode): Slot[] {
 }
 
 function bindingTarget(source: SlotSource): string | null {
-  if (source.kind === 'binding') return source.fromNodeId;
-  if (source.kind === 'apiResponse') return source.endpointId;
+  if (source.kind === 'binding' && source.fromNodeId) return source.fromNodeId;
+  if (source.kind === 'apiResponse' && source.endpointId) return source.endpointId;
   return null;
+}
+
+export interface RelatedSets {
+  /** All nodes structurally or data-flow connected to the selected one. */
+  related: Set<string>;
+  /** Strict data-flow subset of `related`. */
+  dataflow: Set<string>;
 }
 
 export function relatedNodeIds(
   selectedId: string,
   nodes: AnyNode[],
   edges: Edge[],
-): Set<string> {
+): RelatedSets {
   const related = new Set<string>();
+  const dataflow = new Set<string>();
   const selected = nodes.find((n) => n.id === selectedId);
-  if (!selected) return related;
+  if (!selected) return { related, dataflow };
 
-  // Outgoing data deps from selected — its slots referencing other nodes.
+  const addBoth = (id: string) => {
+    related.add(id);
+    dataflow.add(id);
+  };
+
+  // Outgoing data deps — selected's slots referencing other nodes.
   for (const slot of nodeSlots(selected)) {
     const target = bindingTarget(slot.source);
-    if (target && target !== selectedId) related.add(target);
+    if (target && target !== selectedId) addBoth(target);
   }
 
-  // Incoming — other nodes whose slots reference selected.
+  // Incoming data deps — other nodes whose slots reference selected.
   for (const node of nodes) {
     if (node.id === selectedId) continue;
     for (const slot of nodeSlots(node)) {
       const target = bindingTarget(slot.source);
       if (target === selectedId) {
-        related.add(node.id);
+        addBoth(node.id);
         break;
       }
     }
   }
 
-  // CALLS request bindings — both ends of the edge are dataflow peers when
-  // the binding payload is non-empty.
   for (const edge of edges) {
-    if (edge.type !== 'CALLS') continue;
-    const data = (edge.data as CallsEdgeData) ?? null;
-    const bindings = data?.requestBindings ?? [];
-    if (bindings.length === 0) continue;
-    if (edge.sourceId === selectedId) related.add(edge.targetId);
-    else if (edge.targetId === selectedId) related.add(edge.sourceId);
+    const otherEnd =
+      edge.sourceId === selectedId
+        ? edge.targetId
+        : edge.targetId === selectedId
+          ? edge.sourceId
+          : null;
+    if (!otherEnd) continue;
+
+    // Structural neighbour — always related.
+    related.add(otherEnd);
+
+    // CALLS edges with non-empty requestBindings count as data-flow too.
+    if (edge.type === 'CALLS') {
+      const data = (edge.data as CallsEdgeData) ?? null;
+      if ((data?.requestBindings ?? []).some((b) => b.field || b.sourceSlotId)) {
+        dataflow.add(otherEnd);
+      }
+    }
   }
 
-  return related;
+  return { related, dataflow };
 }
