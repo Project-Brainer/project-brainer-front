@@ -1,10 +1,28 @@
-import type { Edge } from '../api/types';
+import type {
+  Edge,
+  NodeType,
+  RespondsWithEdgeData,
+  RespondsWithKind,
+  ResponseOutcome,
+} from '../api/types';
+import { RESPONSE_OUTCOMES } from '../api/types';
 import { Button } from '../components/Button';
-import { Input } from '../components/Field';
+import { Input, Select } from '../components/Field';
 import { Pill } from '../components/Pill';
-import { edgeTypeLabel } from '../lib/edgeCompat';
+import {
+  RESPONDS_WITH_KIND_TARGETS,
+  defaultRespondsWithKind,
+  edgeTypeLabel,
+} from '../lib/edgeCompat';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+
+const KIND_LABELS: Record<RespondsWithKind, string> = {
+  navigate: 'navigate to screen',
+  refresh: 'refresh data',
+  show: 'show UI element',
+  run: 'run action',
+};
 
 export function EdgeInspector({ edge }: { edge: Edge }) {
   const updateEdge = useGraphStore((s) => s.updateEdge);
@@ -34,6 +52,15 @@ export function EdgeInspector({ edge }: { edge: Edge }) {
         </div>
       </div>
 
+      {edge.type === 'RESPONDS_WITH' && target && (
+        <RespondsWithControls
+          edgeId={edge.id}
+          data={(edge.data as RespondsWithEdgeData) ?? undefined}
+          targetType={target.type}
+          onChange={(patch) => updateEdge(edge.id, { data: patch })}
+        />
+      )}
+
       <Input
         label="Label"
         hint="optional"
@@ -58,5 +85,50 @@ export function EdgeInspector({ edge }: { edge: Edge }) {
         Delete connection
       </Button>
     </div>
+  );
+}
+
+function RespondsWithControls({
+  data,
+  targetType,
+  onChange,
+}: {
+  edgeId: string;
+  data?: RespondsWithEdgeData;
+  targetType: NodeType;
+  onChange: (next: RespondsWithEdgeData) => void;
+}) {
+  // Backfill defaults if the edge was created without a structured payload.
+  const kind: RespondsWithKind = data?.kind ?? defaultRespondsWithKind(targetType);
+  const outcome: ResponseOutcome = data?.outcome ?? 'success';
+
+  // Only kinds the current target accepts — other choices would be rejected
+  // by the backend. If somehow the stored kind no longer fits the target,
+  // include it anyway so the user sees what's there and can switch.
+  const allowedKinds = (Object.entries(RESPONDS_WITH_KIND_TARGETS) as Array<
+    [RespondsWithKind, NodeType[]]
+  >)
+    .filter(([k, targets]) => targets.includes(targetType) || k === kind)
+    .map(([k]) => k);
+
+  return (
+    <>
+      <Select<RespondsWithKind>
+        label="Effect"
+        hint={`runs on ${outcome === 'success' ? 'success' : 'error'} response`}
+        value={kind}
+        options={allowedKinds.map((k) => ({ value: k, label: KIND_LABELS[k] }))}
+        onChange={(value) => onChange({ kind: value, outcome })}
+      />
+      <Select<ResponseOutcome>
+        label="When"
+        value={outcome}
+        options={RESPONSE_OUTCOMES.map((o) => ({
+          value: o,
+          label: o === 'success' ? 'on success' : 'on error',
+        }))}
+        onChange={(value) => onChange({ kind, outcome: value })}
+      />
+    </>
   );
 }

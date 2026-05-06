@@ -25,7 +25,7 @@ import type {
 } from '../api/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { allowedEdgeTypes, canConnect } from '../lib/edgeCompat';
+import { allowedEdgeTypes, canConnect, defaultEdgeData } from '../lib/edgeCompat';
 import { BrainerNode } from './nodes/BrainerNode';
 import { BrainerEdge } from './edges/BrainerEdge';
 import { EdgeTypePicker } from './EdgeTypePicker';
@@ -212,6 +212,7 @@ function CanvasInner() {
           sourceId: src.id,
           targetId: tgt.id,
           type: options[0],
+          data: defaultEdgeData(options[0], tgt.type as NodeType),
         });
         return;
       }
@@ -379,7 +380,15 @@ function CanvasInner() {
           onPick={async (type) => {
             const { sourceId, targetId } = picker;
             setPicker(null);
-            await createEdge({ sourceId, targetId, type });
+            const target = nodes.find((n) => n.id === targetId);
+            await createEdge({
+              sourceId,
+              targetId,
+              type,
+              data: target
+                ? defaultEdgeData(type, target.type as NodeType)
+                : undefined,
+            });
           }}
         />
       )}

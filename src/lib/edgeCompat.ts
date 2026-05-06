@@ -4,7 +4,7 @@
  * (greying out forbidden drop targets, showing the type picker on drop).
  */
 
-import type { EdgeType, NodeType } from '../api/types';
+import type { EdgeType, NodeType, RespondsWithKind } from '../api/types';
 
 const RULES: Record<EdgeType, { sources: NodeType[]; targets: NodeType[] }> = {
   OPENS: {
@@ -39,7 +39,49 @@ const RULES: Record<EdgeType, { sources: NodeType[]; targets: NodeType[] }> = {
     sources: ['SCREEN', 'UI_ELEMENT', 'API_ENDPOINT', 'ACTION', 'DATA_MODEL'],
     targets: ['ROLE'],
   },
+  RESPONDS_WITH: {
+    sources: ['API_ENDPOINT'],
+    targets: ['SCREEN', 'UI_ELEMENT', 'ACTION', 'DATA_MODEL'],
+  },
 };
+
+/**
+ * Which target node types each RESPONDS_WITH kind may target. Mirrors the
+ * server-side rules in graph.types.ts; used to filter the kind picker in
+ * the inspector and to flip kind→sane-default when target type changes.
+ */
+export const RESPONDS_WITH_KIND_TARGETS: Record<RespondsWithKind, NodeType[]> = {
+  navigate: ['SCREEN'],
+  refresh: ['DATA_MODEL', 'SCREEN'],
+  show: ['UI_ELEMENT'],
+  run: ['ACTION'],
+};
+
+/** Pick a default RESPONDS_WITH kind given the target node type. */
+export function defaultRespondsWithKind(target: NodeType): RespondsWithKind {
+  for (const [kind, allowed] of Object.entries(RESPONDS_WITH_KIND_TARGETS) as Array<
+    [RespondsWithKind, NodeType[]]
+  >) {
+    if (allowed.includes(target)) return kind;
+  }
+  return 'navigate';
+}
+
+/**
+ * Default `data` payload for an edge — used when the user creates a new
+ * edge through drag-connect or the type picker. Most edges have no
+ * structured data, but RESPONDS_WITH requires `kind` + `outcome` (the
+ * backend rejects an empty body), so we seed it from the target type.
+ */
+export function defaultEdgeData(
+  type: EdgeType,
+  targetType: NodeType,
+): Record<string, unknown> | undefined {
+  if (type === 'RESPONDS_WITH') {
+    return { kind: defaultRespondsWithKind(targetType), outcome: 'success' };
+  }
+  return undefined;
+}
 
 /**
  * All edge types that are valid for a given source/target pair.
@@ -93,5 +135,7 @@ export function edgeTypeLabel(type: EdgeType): string {
       return 'navigates';
     case 'RESTRICTED_BY':
       return 'restricted by';
+    case 'RESPONDS_WITH':
+      return 'responds with';
   }
 }

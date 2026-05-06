@@ -6,7 +6,7 @@ import {
   getBezierPath,
   type EdgeProps,
 } from 'reactflow';
-import type { Edge, EdgeType } from '../../api/types';
+import type { Edge, EdgeType, RespondsWithEdgeData } from '../../api/types';
 import { edgeTypeLabel } from '../../lib/edgeCompat';
 
 export interface BrainerEdgeData {
@@ -21,10 +21,19 @@ function dashForType(type: EdgeType): string | undefined {
       return '4 4';
     case 'RESTRICTED_BY':
       return '1 4';
+    case 'RESPONDS_WITH':
+      return '6 3';
     default:
       return undefined; // solid
   }
 }
+
+const RESPONDS_WITH_KIND_LABELS: Record<string, string> = {
+  navigate: 'navigate',
+  refresh: 'refresh',
+  show: 'show',
+  run: 'run',
+};
 
 function BrainerEdgeImpl({
   id,
@@ -49,7 +58,31 @@ function BrainerEdgeImpl({
   const edge = data?.edge;
   const type = edge?.type ?? 'OPENS';
   const dash = dashForType(type);
-  const label = edge?.label ?? edgeTypeLabel(type);
+
+  // RESPONDS_WITH gets a colour based on outcome (green = success, red =
+  // error) so success/error branches are distinguishable at a glance.
+  const respondsData = type === 'RESPONDS_WITH'
+    ? (edge?.data as RespondsWithEdgeData | undefined)
+    : undefined;
+  const outcomeColor = respondsData
+    ? respondsData.outcome === 'error'
+      ? 'var(--status-error, #d33)'
+      : 'var(--status-success, #2a8)'
+    : null;
+
+  const stroke = selected
+    ? 'var(--accent)'
+    : (outcomeColor ?? 'var(--neutral-5)');
+
+  let label: string;
+  if (edge?.label) {
+    label = edge.label;
+  } else if (respondsData) {
+    const kind = RESPONDS_WITH_KIND_LABELS[respondsData.kind] ?? respondsData.kind;
+    label = `${kind} · on ${respondsData.outcome}`;
+  } else {
+    label = edgeTypeLabel(type);
+  }
 
   return (
     <>
@@ -58,7 +91,7 @@ function BrainerEdgeImpl({
         path={path}
         markerEnd="url(#pb-arrow)"
         style={{
-          stroke: selected ? 'var(--accent)' : 'var(--neutral-5)',
+          stroke,
           strokeWidth: selected ? 2 : 1.5,
           strokeDasharray: dash,
           transition: 'stroke 120ms',

@@ -28,8 +28,22 @@ export const EDGE_TYPES = [
   'UPDATES',
   'NAVIGATES',
   'RESTRICTED_BY',
+  'RESPONDS_WITH',
 ] as const;
 export type EdgeType = (typeof EDGE_TYPES)[number];
+
+/** Reaction kinds for an API endpoint's response edge. */
+export const RESPONDS_WITH_KINDS = ['navigate', 'refresh', 'show', 'run'] as const;
+export type RespondsWithKind = (typeof RESPONDS_WITH_KINDS)[number];
+
+/** Which response branch the edge represents. */
+export const RESPONSE_OUTCOMES = ['success', 'error'] as const;
+export type ResponseOutcome = (typeof RESPONSE_OUTCOMES)[number];
+
+export type RespondsWithEdgeData = {
+  kind: RespondsWithKind;
+  outcome: ResponseOutcome;
+};
 
 export const FIELD_TYPES = [
   'string',
