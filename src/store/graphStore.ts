@@ -79,6 +79,16 @@ export interface GraphState {
       data: Record<string, unknown>;
     }>,
   ) => void;
+  /**
+   * Atomically rebind a UI_ELEMENT to a different SCREEN.
+   *
+   * UI_ELEMENT positions are stored relative to their parent screen so that
+   * dragging the screen carries its children. Changing screenId therefore
+   * has to recompute the position too, otherwise the element jumps to the
+   * wrong absolute spot. Doing it in one set() also ensures the pending
+   * promote (POST /nodes) sees the already-relative position.
+   */
+  setUiElementScreen: (nodeId: string, newScreenId: string) => void;
   deleteNode: (nodeId: string) => Promise<void>;
 
   // -------- edge ops --------
@@ -423,6 +433,63 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         return;
       }
 
+      markDirty();
+    },
+
+    setUiElementScreen(nodeId, newScreenId) {
+      const state = get();
+      const node = state.nodes.find((n) => n.id === nodeId);
+      if (!node || node.type !== 'UI_ELEMENT') return;
+
+      const oldData = node.data as UiElementData;
+      const oldScreen = oldData.screenId
+        ? state.nodes.find((n) => n.id === oldData.screenId && n.type === 'SCREEN')
+        : null;
+      const newScreen = newScreenId
+        ? state.nodes.find((n) => n.id === newScreenId && n.type === 'SCREEN')
+        : null;
+
+      // Position semantics: if a UI_ELEMENT has a screenId, its position is
+      // relative to that screen; otherwise it's absolute. Recompute on rebind
+      // so the element doesn't jump.
+      let newPosition = node.position;
+      if (!oldScreen && newScreen) {
+        // Pending → attached. Stack beneath the new screen.
+        const siblings = state.nodes.filter(
+          (n) =>
+            n.type === 'UI_ELEMENT' &&
+            n.id !== nodeId &&
+            (n.data as UiElementData).screenId === newScreen.id,
+        ).length;
+        newPosition = { x: 20, y: 200 + siblings * 70 };
+      } else if (oldScreen && !newScreen) {
+        // Attached → orphan. Convert relative to absolute so it stays where
+        // the user last saw it.
+        newPosition = {
+          x: node.position.x + oldScreen.position.x,
+          y: node.position.y + oldScreen.position.y,
+        };
+      } else if (oldScreen && newScreen && oldScreen.id !== newScreen.id) {
+        // Switching parents. Preserve the absolute on-screen position.
+        newPosition = {
+          x: node.position.x + oldScreen.position.x - newScreen.position.x,
+          y: node.position.y + oldScreen.position.y - newScreen.position.y,
+        };
+      }
+
+      const updatedData: UiElementData = { ...oldData, screenId: newScreenId };
+      const nextNodes = state.nodes.map((n) =>
+        n.id === nodeId
+          ? ({ ...n, data: updatedData as never, position: newPosition } as AnyNode)
+          : n,
+      );
+      set({ nodes: nextNodes });
+
+      const isPending = state.pendingNodeIds.includes(nodeId);
+      if (isPending) {
+        if (newScreenId) void promotePending(nodeId);
+        return;
+      }
       markDirty();
     },
 

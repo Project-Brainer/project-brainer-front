@@ -6,6 +6,7 @@ import { useGraphStore } from '../store/graphStore';
 
 export function UiElementEditor({ node }: { node: AnyNode }) {
   const updateNode = useGraphStore((s) => s.updateNode);
+  const setUiElementScreen = useGraphStore((s) => s.setUiElementScreen);
   // Read stable `nodes` reference and filter via useMemo — passing a filtered
   // array straight from the selector breaks Zustand's snapshot cache check.
   const allNodes = useGraphStore((s) => s.nodes);
@@ -43,11 +44,7 @@ export function UiElementEditor({ node }: { node: AnyNode }) {
         }
         value={data.screenId}
         options={screenOptions}
-        onChange={(value) =>
-          updateNode(node.id, {
-            data: { ...data, screenId: value },
-          })
-        }
+        onChange={(value) => setUiElementScreen(node.id, value)}
       />
       <Input
         label="Label"

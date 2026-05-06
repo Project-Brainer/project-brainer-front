@@ -21,6 +21,7 @@ import type {
   EdgeType,
   NodeType,
   Position,
+  UiElementData,
 } from '../api/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -45,14 +46,26 @@ const EDGE_TYPES: EdgeTypes = {
   brainer: BrainerEdge,
 };
 
-function nodeForFlow(node: AnyNode, selected: boolean): RFNode {
-  return {
+function nodeForFlow(
+  node: AnyNode,
+  selected: boolean,
+  parentScreenId?: string,
+): RFNode {
+  const rf: RFNode = {
     id: node.id,
     type: 'brainer',
     position: node.position,
     data: { node, selected },
     selected,
   };
+  if (parentScreenId) {
+    // Stored UI_ELEMENT positions are relative to their parent SCREEN, which
+    // is exactly what React Flow expects when `parentId` is set. The screen
+    // then drags its UI elements with it for free.
+    rf.parentId = parentScreenId;
+    rf.extent = undefined; // allow children to render outside parent bounds
+  }
+  return rf;
 }
 
 function edgeForFlow(edge: Edge, selected: boolean): RFEdge {
@@ -107,15 +120,60 @@ function CanvasInner() {
     }
   }, [initialViewport]);
 
-  const rfNodes = useMemo<RFNode[]>(
-    () => nodes.map((n) => nodeForFlow(n, n.id === selectedNodeId)),
-    [nodes, selectedNodeId],
-  );
+  const rfNodes = useMemo<RFNode[]>(() => {
+    const screenIds = new Set(
+      nodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
+    );
+    // React Flow requires every parent to appear in the list before its
+    // children. Render screens first, everything else after — this is stable
+    // and good enough since we only nest UI_ELEMENT under SCREEN.
+    const sorted = [...nodes].sort((a, b) => {
+      if (a.type === 'SCREEN' && b.type !== 'SCREEN') return -1;
+      if (b.type === 'SCREEN' && a.type !== 'SCREEN') return 1;
+      return 0;
+    });
+    return sorted.map((n) => {
+      let parentScreenId: string | undefined;
+      if (n.type === 'UI_ELEMENT') {
+        const screenId = (n.data as UiElementData).screenId;
+        if (screenId && screenIds.has(screenId)) parentScreenId = screenId;
+      }
+      return nodeForFlow(n, n.id === selectedNodeId, parentScreenId);
+    });
+  }, [nodes, selectedNodeId]);
 
-  const rfEdges = useMemo<RFEdge[]>(
-    () => edges.map((e) => edgeForFlow(e, e.id === selectedEdgeId)),
-    [edges, selectedEdgeId],
-  );
+  const rfEdges = useMemo<RFEdge[]>(() => {
+    const real = edges.map((e) => edgeForFlow(e, e.id === selectedEdgeId));
+    // Synthesize a soft, non-interactive line from each SCREEN to its
+    // UI_ELEMENT children — visually reinforces the parent/child binding
+    // without polluting the real edge data.
+    const screenIds = new Set(
+      nodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
+    );
+    const synthetic: RFEdge[] = [];
+    for (const n of nodes) {
+      if (n.type !== 'UI_ELEMENT') continue;
+      const screenId = (n.data as UiElementData).screenId;
+      if (!screenId || !screenIds.has(screenId)) continue;
+      synthetic.push({
+        id: `pb-belongs:${n.id}`,
+        source: screenId,
+        target: n.id,
+        type: 'straight',
+        focusable: false,
+        deletable: false,
+        interactionWidth: 0,
+        zIndex: -1,
+        style: {
+          stroke: 'var(--node-screen-fg, currentColor)',
+          strokeDasharray: '4 4',
+          strokeWidth: 1.25,
+          opacity: 0.5,
+        },
+      });
+    }
+    return [...real, ...synthetic];
+  }, [edges, nodes, selectedEdgeId]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -193,6 +251,9 @@ function CanvasInner() {
 
   const onEdgeClick = useCallback(
     (_e: React.MouseEvent, edge: RFEdge) => {
+      // Synthetic SCREEN→UI_ELEMENT belongs-to lines aren't part of the real
+      // edge graph, so they shouldn't be selectable.
+      if (edge.id.startsWith('pb-belongs:')) return;
       selectEdge(edge.id);
     },
     [selectEdge],
