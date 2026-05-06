@@ -20,6 +20,8 @@ export interface UiState {
   validationError: string | null;
   promptModalOpen: boolean;
   promptScopeNodeIds: string[] | null;
+  sidebarOpen: boolean;
+  rightPanelOpen: boolean;
 
   selectNode: (id: string | null) => void;
   selectEdge: (id: string | null) => void;
@@ -32,6 +34,8 @@ export interface UiState {
   setValidationError: (msg: string | null) => void;
   openPromptModal: (scope?: string[] | null) => void;
   closePromptModal: () => void;
+  toggleSidebar: () => void;
+  toggleRightPanel: () => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
@@ -45,6 +49,8 @@ export const useUiStore = create<UiState>()((set) => ({
   validationError: null,
   promptModalOpen: false,
   promptScopeNodeIds: null,
+  sidebarOpen: true,
+  rightPanelOpen: true,
 
   selectNode(id) {
     set({ selectedNodeId: id, selectedEdgeId: null });
@@ -83,5 +89,11 @@ export const useUiStore = create<UiState>()((set) => ({
   },
   closePromptModal() {
     set({ promptModalOpen: false, promptScopeNodeIds: null });
+  },
+  toggleSidebar() {
+    set((s) => ({ sidebarOpen: !s.sidebarOpen }));
+  },
+  toggleRightPanel() {
+    set((s) => ({ rightPanelOpen: !s.rightPanelOpen }));
   },
 }));
