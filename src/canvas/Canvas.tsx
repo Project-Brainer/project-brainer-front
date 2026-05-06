@@ -17,6 +17,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import type {
   AnyNode,
+  CallsEdgeData,
   Edge,
   EdgeType,
   NodeType,
@@ -30,6 +31,7 @@ import { relatedNodeIds } from '../lib/dataflow';
 import { BrainerNode } from './nodes/BrainerNode';
 import { BrainerEdge } from './edges/BrainerEdge';
 import { EdgeTypePicker } from './EdgeTypePicker';
+import { SlotWires } from './SlotWires';
 
 interface PickerState {
   sourceId: string;
@@ -53,12 +55,13 @@ function nodeForFlow(
   related: boolean,
   dataflowRelated: boolean,
   parentScreenId?: string,
+  requestBindingFields?: string[],
 ): RFNode {
   const rf: RFNode = {
     id: node.id,
     type: 'brainer',
     position: node.position,
-    data: { node, selected, related, dataflowRelated },
+    data: { node, selected, related, dataflowRelated, requestBindingFields },
     selected,
   };
   if (parentScreenId) {
@@ -66,7 +69,7 @@ function nodeForFlow(
     // is exactly what React Flow expects when `parentId` is set. The screen
     // then drags its UI elements with it for free.
     rf.parentId = parentScreenId;
-    rf.extent = undefined; // allow children to render outside parent bounds
+    rf.extent = undefined;
   }
   return rf;
 }
@@ -104,7 +107,6 @@ function CanvasInner() {
 
   const [picker, setPicker] = useState<PickerState | null>(null);
 
-  // Focus canvas on a node when requested from sidebar.
   useEffect(() => {
     if (!focusNodeId || !instanceRef.current) return;
     instanceRef.current.fitView({
@@ -115,7 +117,6 @@ function CanvasInner() {
     clearFocusNode();
   }, [focusNodeId, clearFocusNode]);
 
-  // Apply persisted viewport once project loads.
   const initialViewport = project?.viewport;
   useEffect(() => {
     if (initialViewport && instanceRef.current) {
@@ -123,22 +124,35 @@ function CanvasInner() {
     }
   }, [initialViewport]);
 
-  // Two highlight tiers around the selected node: `related` covers any
-  // structural neighbour (so the user sees what's wired even on graphs
-  // without dataflow markup yet), `dataflow` is the strict subset that
-  // actually exchanges data via slot bindings or CALLS request bindings.
   const { related, dataflow } = useMemo(() => {
     if (!selectedNodeId) return { related: new Set<string>(), dataflow: new Set<string>() };
     return relatedNodeIds(selectedNodeId, nodes, edges);
   }, [selectedNodeId, nodes, edges]);
 
+  // For each API endpoint, the unique request fields that some incoming
+  // CALLS edge binds to. Drives the synthetic anchor rows on the endpoint
+  // card so the wire overlay can land on the exact field.
+  const requestFieldsByEndpoint = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const e of edges) {
+      if (e.type !== 'CALLS') continue;
+      const data = e.data as CallsEdgeData | undefined;
+      const bindings = data?.requestBindings ?? [];
+      if (bindings.length === 0) continue;
+      const list = m.get(e.targetId) ?? [];
+      for (const b of bindings) {
+        if (!b.field) continue;
+        if (!list.includes(b.field)) list.push(b.field);
+      }
+      if (list.length) m.set(e.targetId, list);
+    }
+    return m;
+  }, [edges]);
+
   const rfNodes = useMemo<RFNode[]>(() => {
     const screenIds = new Set(
       nodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
     );
-    // React Flow requires every parent to appear in the list before its
-    // children. Render screens first, everything else after — this is stable
-    // and good enough since we only nest UI_ELEMENT under SCREEN.
     const sorted = [...nodes].sort((a, b) => {
       if (a.type === 'SCREEN' && b.type !== 'SCREEN') return -1;
       if (b.type === 'SCREEN' && a.type !== 'SCREEN') return 1;
@@ -156,15 +170,13 @@ function CanvasInner() {
         related.has(n.id),
         dataflow.has(n.id),
         parentScreenId,
+        n.type === 'API_ENDPOINT' ? requestFieldsByEndpoint.get(n.id) : undefined,
       );
     });
-  }, [nodes, selectedNodeId, related, dataflow]);
+  }, [nodes, selectedNodeId, related, dataflow, requestFieldsByEndpoint]);
 
   const rfEdges = useMemo<RFEdge[]>(() => {
     const real = edges.map((e) => edgeForFlow(e, e.id === selectedEdgeId));
-    // Synthesize a soft, non-interactive line from each SCREEN to its
-    // UI_ELEMENT children — visually reinforces the parent/child binding
-    // without polluting the real edge data.
     const screenIds = new Set(
       nodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
     );
@@ -199,8 +211,6 @@ function CanvasInner() {
         if (ch.type === 'position' && ch.position && ch.dragging === false) {
           updateNode(ch.id, { position: ch.position });
         } else if (ch.type === 'position' && ch.position && ch.dragging) {
-          // intermediate drag — update store so canvas re-renders;
-          // autosave is rate-limited.
           updateNode(ch.id, { position: ch.position });
         } else if (ch.type === 'remove') {
           // We control delete via the UI panel — ignore RF native delete
@@ -214,7 +224,7 @@ function CanvasInner() {
   const onConnect = useCallback<OnConnect>(
     (conn: Connection) => {
       if (!conn.source || !conn.target) return;
-      if (conn.source === conn.target) return; // no self-loops in MVP
+      if (conn.source === conn.target) return;
       const src = nodes.find((n) => n.id === conn.source);
       const tgt = nodes.find((n) => n.id === conn.target);
       if (!src || !tgt) return;
@@ -223,7 +233,7 @@ function CanvasInner() {
         src.type as NodeType,
         tgt.type as NodeType,
       );
-      if (options.length === 0) return; // forbidden
+      if (options.length === 0) return;
 
       if (options.length === 1) {
         void createEdge({
@@ -235,7 +245,6 @@ function CanvasInner() {
         return;
       }
 
-      // Multiple — anchor a picker midway between the two nodes.
       const project = (instanceRef.current as ReactFlowInstance).project ?? null;
       const midpoint = project
         ? project({
@@ -244,7 +253,6 @@ function CanvasInner() {
           })
         : { x: 0, y: 0 };
 
-      // Convert to screen coords via React Flow viewport.
       const vp = instanceRef.current?.getViewport() ?? { x: 0, y: 0, zoom: 1 };
       const screenX = midpoint.x * vp.zoom + vp.x;
       const screenY = midpoint.y * vp.zoom + vp.y;
@@ -270,8 +278,6 @@ function CanvasInner() {
 
   const onEdgeClick = useCallback(
     (_e: React.MouseEvent, edge: RFEdge) => {
-      // Synthetic SCREEN→UI_ELEMENT belongs-to lines aren't part of the real
-      // edge graph, so they shouldn't be selectable.
       if (edge.id.startsWith('pb-belongs:')) return;
       selectEdge(edge.id);
     },
@@ -302,7 +308,6 @@ function CanvasInner() {
     [nodes],
   );
 
-  // Drag-from-toolbar drop handling.
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -387,6 +392,7 @@ function CanvasInner() {
           showInteractive={false}
           className="pb-rf-controls"
         />
+        <SlotWires nodes={nodes} edges={edges} wrapperRef={wrapperRef} />
       </ReactFlow>
 
       {picker && (

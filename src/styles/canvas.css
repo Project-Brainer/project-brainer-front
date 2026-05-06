@@ -288,3 +288,99 @@
   color: var(--fg-4);
   font-size: var(--text-2xs);
 }
+
+/* -------- API endpoint anchors --------
+   Synthetic anchor rows on the API_ENDPOINT card. They look like slots
+   but exist purely to give the wire overlay concrete DOM endpoints to
+   attach to (one row per request field bound by an incoming CALLS
+   edge, plus a single "response" row). */
+.pb-node__endpoint-anchors {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+}
+.pb-node__endpoint-anchor {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 6px;
+  align-items: center;
+  padding: 1px 0;
+  min-width: 0;
+}
+.pb-node__endpoint-anchor--request .pb-node__slot-icon {
+  color: var(--warning, var(--accent));
+}
+.pb-node__endpoint-anchor--response .pb-node__slot-icon {
+  color: #2a8;
+}
+.pb-node__endpoint-anchor .pb-node__slot-name {
+  color: var(--fg-2);
+}
+
+/* -------- Slot wires overlay --------
+   SVG layer that draws curves between actual slot rows on the canvas.
+   Sits over ReactFlow's edge layer but lets pointer events through
+   everywhere except along the visible stroke (so node clicks / drags
+   keep working). Coordinates are screen-space relative to
+   .pb-canvas-area — anchors are measured via getBoundingClientRect, so
+   RF's viewport transform is implicitly handled. */
+.pb-slot-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+  overflow: visible;
+}
+
+.pb-slot-wire {
+  color: var(--accent);
+  fill: none;
+  pointer-events: none;
+}
+.pb-slot-wire--apiResponse {
+  color: #2a8;
+}
+.pb-slot-wire--requestBinding {
+  color: var(--warning, var(--accent));
+}
+
+.pb-slot-wire__line {
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-dasharray: 4 3;
+  fill: none;
+  opacity: 0.7;
+  transition: opacity 120ms, stroke-width 120ms;
+}
+.pb-slot-wire__hit {
+  stroke: transparent;
+  stroke-width: 12;
+  fill: none;
+  pointer-events: stroke;
+  cursor: help;
+}
+.pb-slot-wire:hover .pb-slot-wire__line {
+  stroke-width: 2;
+  opacity: 1;
+  stroke-dasharray: none;
+}
+
+.pb-slot-wire-label {
+  pointer-events: none;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+}
+.pb-slot-wire-label rect {
+  fill: var(--bg-surface);
+  stroke: var(--border-hairline);
+  stroke-width: 1;
+}
+.pb-slot-wire-label text {
+  fill: var(--fg-1);
+}
