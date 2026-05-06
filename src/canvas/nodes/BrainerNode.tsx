@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { memo, useMemo } from 'react';
 import { Handle, Position, type NodeProps } from 'reactflow';
-import type { AnyNode, NodeType } from '../../api/types';
+import type { AnyNode, NodeType, Slot, SlotSourceKind } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { Pill } from '../../components/Pill';
 import { NODE_META } from '../../lib/nodeMeta';
@@ -10,10 +10,12 @@ export interface BrainerNodeData {
   node: AnyNode;
   selected?: boolean;
   forbidden?: boolean;
-  /** True if this node shares a data-flow context with the selected node
-   *  (incoming/outgoing slot bindings, apiResponse listeners, CALLS request
-   *  bindings) — soft-highlights it on the canvas. */
+  /** True if this node is structurally connected to the selected one (any
+   *  edge, plus slot/binding refs) — soft border highlight. */
   related?: boolean;
+  /** Strict subset of `related` — actually exchanges data with selected
+   *  via slot bindings or CALLS request bindings. Stronger ring. */
+  dataflowRelated?: boolean;
 }
 
 function nodeSubtitle(node: AnyNode): string | null {
@@ -52,7 +54,8 @@ function BrainerNodeImpl({ data, selected }: NodeProps<BrainerNodeData>) {
         `pb-node--${node.type.toLowerCase()}`,
         selected && 'pb-node--selected',
         data.forbidden && 'pb-node--forbidden',
-        data.related && !selected && 'pb-node--dataflow-related',
+        data.related && !selected && 'pb-node--related',
+        data.dataflowRelated && !selected && 'pb-node--dataflow-related',
       )}
       data-type={node.type}
     >
@@ -83,6 +86,7 @@ function BrainerNodeImpl({ data, selected }: NodeProps<BrainerNodeData>) {
       {node.type === 'DATA_MODEL' && (
         <DataModelPreview data={node.data as { fields?: Array<{ name: string; type: string }> }} />
       )}
+      <SlotsPreview node={node} />
       <Handle
         type="source"
         position={Position.Right}
@@ -129,6 +133,65 @@ function DataModelPreview({
       ))}
       {fields.length > 5 && (
         <li className="pb-node__fields-more">+{fields.length - 5} more</li>
+      )}
+    </ul>
+  );
+}
+
+const SOURCE_ICON: Record<SlotSourceKind, string> = {
+  literal: 'type',
+  userInput: 'pencil',
+  route: 'link-2',
+  cache: 'database',
+  binding: 'arrow-down-right',
+  apiResponse: 'cloud',
+};
+
+const SOURCE_TONE: Record<SlotSourceKind, 'wired' | 'plain'> = {
+  literal: 'plain',
+  userInput: 'plain',
+  route: 'plain',
+  cache: 'plain',
+  binding: 'wired',
+  apiResponse: 'wired',
+};
+
+function SlotsPreview({ node }: { node: AnyNode }) {
+  // Slots only live on Screen / UI Element / Action right now.
+  if (node.type !== 'SCREEN' && node.type !== 'UI_ELEMENT' && node.type !== 'ACTION') {
+    return null;
+  }
+  const slots = ((node.data as { slots?: Slot[] }).slots ?? []) as Slot[];
+  if (slots.length === 0) return null;
+
+  const visible = slots.slice(0, 4);
+  const overflow = slots.length - visible.length;
+
+  return (
+    <ul className="pb-node__slots">
+      {visible.map((s) => {
+        const tone = SOURCE_TONE[s.source.kind];
+        return (
+          <li
+            key={s.id}
+            className={clsx(
+              'pb-node__slot',
+              tone === 'wired' && 'pb-node__slot--wired',
+            )}
+            title={`${s.name} (${s.type}) — from ${s.source.kind}`}
+          >
+            <Icon
+              name={SOURCE_ICON[s.source.kind]}
+              size={10}
+              className="pb-node__slot-icon"
+            />
+            <span className="pb-node__slot-name">{s.name || '—'}</span>
+            <span className="pb-node__slot-type pb-mono">{s.type}</span>
+          </li>
+        );
+      })}
+      {overflow > 0 && (
+        <li className="pb-node__fields-more">+{overflow} more</li>
       )}
     </ul>
   );

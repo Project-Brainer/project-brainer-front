@@ -75,8 +75,14 @@
   opacity: 0.45;
 }
 
-/* Dataflow-related: faintly highlights nodes that share slot bindings,
-   apiResponse links, or CALLS request bindings with the selected node. */
+/* Related to the selected node by ANY edge or slot reference. Subtle
+   border tint so the user sees the topology around their selection
+   even on graphs that don't yet declare data flow. */
+.pb-node--related {
+  border-color: var(--fg-3);
+}
+
+/* Strict data-flow neighbour — accent ring on top of the related border. */
 .pb-node--dataflow-related {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent-soft, var(--accent));
@@ -149,6 +155,47 @@
 .pb-node__fields-more {
   color: var(--fg-4);
   font-style: italic;
+}
+
+/* Slots preview — compact list rendered on the canvas card so the user
+   sees the node's state vocabulary without opening the inspector. */
+.pb-node__slots {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+}
+.pb-node__slot {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  gap: 6px;
+  align-items: center;
+  padding: 1px 0;
+  min-width: 0;
+}
+.pb-node__slot-icon {
+  color: var(--fg-4);
+}
+.pb-node__slot-name {
+  color: var(--fg-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pb-node__slot-type {
+  color: var(--fg-4);
+  font-size: var(--text-xs);
+}
+/* Wired slots (binding / apiResponse) — accent-tinted to flag a cross-node
+   reference at a glance, matching the dataflow viz on the canvas. */
+.pb-node__slot--wired .pb-node__slot-icon {
+  color: var(--accent);
+}
+.pb-node__slot--wired .pb-node__slot-name {
+  color: var(--fg-1);
 }
 
 /* -------- Edge label -------- */
