@@ -18,6 +18,7 @@ import { graphApi } from '../api/graph';
 import { nodesApi } from '../api/nodes';
 import { projectsApi } from '../api/projects';
 import { useBranchStore } from './branchStore';
+import { useUiStore } from './uiStore';
 import type {
   AnyNode,
   CreateEdgeInput,
@@ -29,6 +30,7 @@ import type {
   Project,
   ProjectGraph,
   ReplaceGraphBody,
+  UiElementData,
   Viewport,
 } from '../api/types';
 import { debounce } from '../lib/debounce';
@@ -49,6 +51,14 @@ export interface GraphState {
   saveStatus: SaveStatus;
   lastSaveError: string | null;
   lastSavedAt: number | null;
+
+  /**
+   * Nodes created locally that are not yet persisted on the server.
+   * UI_ELEMENT nodes need a screenId before the backend will accept them,
+   * so we keep them client-only until the inspector fills it in. Pending
+   * nodes are excluded from the autosave payload to avoid validation errors.
+   */
+  pendingNodeIds: string[];
 
   // -------- lifecycle --------
   loadProject: (projectId: string) => Promise<void>;
@@ -96,28 +106,62 @@ export interface GraphState {
 
 let saveAbort: AbortController | null = null;
 
+/**
+ * Re-attach client-only pending nodes (and their edges) onto the graph the
+ * server returned from replaceGraph — those weren't sent in the payload, so
+ * the response doesn't include them either.
+ */
+function mergePendingIntoServerGraph(
+  state: GraphState,
+  serverNodes: AnyNode[],
+  serverEdges: Edge[],
+): { nodes: AnyNode[]; edges: Edge[] } {
+  if (state.pendingNodeIds.length === 0) {
+    return { nodes: serverNodes, edges: serverEdges };
+  }
+  const stillPending = new Set(state.pendingNodeIds);
+  const localPendingNodes = state.nodes.filter((n) => stillPending.has(n.id));
+  const localPendingEdges = state.edges.filter(
+    (e) => stillPending.has(e.sourceId) || stillPending.has(e.targetId),
+  );
+  return {
+    nodes: [...serverNodes, ...localPendingNodes],
+    edges: [...serverEdges, ...localPendingEdges],
+  };
+}
+
 export const useGraphStore = create<GraphState>()((set, get) => {
   const scheduleSave = debounce(async () => {
     await persistNow();
   }, AUTOSAVE_MS);
 
+  // Tracks nodes whose promote-to-server request is in flight.
+  // Lives outside store state — purely a deduplication guard.
+  const promoting = new Set<string>();
+
   const persistNow = async () => {
-    const { project, nodes, edges } = get();
+    const { project, nodes, edges, pendingNodeIds } = get();
     if (!project) return;
     if (saveAbort) saveAbort.abort();
     saveAbort = new AbortController();
 
     set({ saveStatus: 'saving', lastSaveError: null });
 
+    const pending = new Set(pendingNodeIds);
+    const persistedNodes = nodes.filter((n) => !pending.has(n.id));
+    const persistedEdges = edges.filter(
+      (e) => !pending.has(e.sourceId) && !pending.has(e.targetId),
+    );
+
     const body: ReplaceGraphBody = {
-      nodes: nodes.map((n) => ({
+      nodes: persistedNodes.map((n) => ({
         id: n.id,
         type: n.type,
         name: n.name,
         position: n.position,
         data: n.data,
       })),
-      edges: edges.map((e) => ({
+      edges: persistedEdges.map((e) => ({
         id: e.id,
         sourceId: e.sourceId,
         targetId: e.targetId,
@@ -134,19 +178,25 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         // Branch save — backend returns BranchGraph (no project field).
         // Keep the existing project metadata; only reconcile nodes/edges.
         const updated = await branchesApi.replaceGraph(project.id, activeBranchId, body);
+        const merged = mergePendingIntoServerGraph(
+          get(),
+          updated.nodes as AnyNode[],
+          updated.edges as Edge[],
+        );
         set({
-          nodes: updated.nodes as AnyNode[],
-          edges: updated.edges as Edge[],
+          nodes: merged.nodes,
+          edges: merged.edges,
           saveStatus: 'saved',
           lastSavedAt: Date.now(),
         });
       } else {
         // Root save — backend returns full ProjectGraph including project.
         const updated = await graphApi.replace(project.id, body);
+        const merged = mergePendingIntoServerGraph(get(), updated.nodes, updated.edges);
         set({
           project: updated.project,
-          nodes: updated.nodes,
-          edges: updated.edges,
+          nodes: merged.nodes,
+          edges: merged.edges,
           saveStatus: 'saved',
           lastSavedAt: Date.now(),
         });
@@ -165,6 +215,54 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     scheduleSave();
   };
 
+  /**
+   * Promote a locally-created UI_ELEMENT to the server.
+   * In main mode this means POSTing to /nodes so the server mints the
+   * canonical id; we then swap the temp node for the canonical one.
+   * In branch mode there's no per-node create endpoint — replaceGraph
+   * accepts client-side ids, so we just clear the pending flag and let
+   * the next autosave include the node.
+   */
+  const promotePending = async (nodeId: string) => {
+    if (promoting.has(nodeId)) return;
+    promoting.add(nodeId);
+    try {
+      const { project, nodes, pendingNodeIds } = get();
+      if (!project) return;
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node) return;
+
+      const activeBranchId = useBranchStore.getState().activeBranchId;
+      if (activeBranchId) {
+        set({ pendingNodeIds: pendingNodeIds.filter((id) => id !== nodeId) });
+        markDirty();
+        return;
+      }
+
+      try {
+        const created = await nodesApi.create(project.id, {
+          type: node.type,
+          name: node.name,
+          position: node.position,
+          data: node.data as Record<string, unknown>,
+        });
+        const fresh = get();
+        set({
+          nodes: fresh.nodes.map((n) => (n.id === nodeId ? created : n)),
+          pendingNodeIds: fresh.pendingNodeIds.filter((id) => id !== nodeId),
+        });
+        const ui = useUiStore.getState();
+        if (ui.selectedNodeId === nodeId) ui.selectNode(created.id);
+        // Pick up any local edits (e.g. label) that landed during the create.
+        markDirty();
+      } catch (err) {
+        set({ saveStatus: 'error', lastSaveError: (err as Error).message });
+      }
+    } finally {
+      promoting.delete(nodeId);
+    }
+  };
+
   return {
     project: null,
     nodes: [],
@@ -174,6 +272,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     saveStatus: 'idle',
     lastSaveError: null,
     lastSavedAt: null,
+    pendingNodeIds: [],
 
     async loadProject(projectId) {
       set({
@@ -184,6 +283,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         edges: [],
         saveStatus: 'idle',
         lastSavedAt: null,
+        pendingNodeIds: [],
       });
       try {
         const graph = await graphApi.get(projectId);
@@ -205,6 +305,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       scheduleSave.cancel();
       saveAbort?.abort();
       saveAbort = null;
+      promoting.clear();
       set({
         project: null,
         nodes: [],
@@ -214,6 +315,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         lastSavedAt: null,
         loadError: null,
         loadingProjectId: null,
+        pendingNodeIds: [],
       });
     },
 
@@ -221,31 +323,45 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       const { project, nodes } = get();
       if (!project) return null;
       const data = defaultNodeData(type);
+      const resolvedName =
+        name ?? defaultNodeName(type, nodes.filter((n) => n.type === type).length);
+      const resolvedPosition = position ?? { x: 80, y: 80 };
+
+      // UI_ELEMENT requires a screenId, which the user picks via the inspector.
+      // Create it locally as pending in both branch and main mode; promote it
+      // to the server once a screen is selected.
+      const isPendingUiElement = type === 'UI_ELEMENT';
 
       const activeBranchId = useBranchStore.getState().activeBranchId;
-      if (activeBranchId) {
-        // Branch mode: create locally with a client-side ID.
-        // replaceGraph will compute the ADD delta vs parent and persist it.
+      if (activeBranchId || isPendingUiElement) {
         const now = new Date().toISOString();
-        const branchNode: AnyNode = {
+        const localNode: AnyNode = {
           id: crypto.randomUUID(),
           projectId: project.id,
           type,
-          name: name ?? defaultNodeName(type, nodes.filter((n) => n.type === type).length),
-          position: position ?? { x: 80, y: 80 },
+          name: resolvedName,
+          position: resolvedPosition,
           data: data as never,
           createdAt: now,
           updatedAt: now,
         };
-        set({ nodes: [...get().nodes, branchNode] });
-        markDirty();
-        return branchNode;
+        const next = get();
+        set({
+          nodes: [...next.nodes, localNode],
+          pendingNodeIds: isPendingUiElement
+            ? [...next.pendingNodeIds, localNode.id]
+            : next.pendingNodeIds,
+        });
+        // Branch mode persists via replaceGraph; pending UI_ELEMENTs wait for
+        // promotePending. Don't markDirty for pending — autosave skips them.
+        if (activeBranchId && !isPendingUiElement) markDirty();
+        return localNode;
       }
 
       const input: CreateNodeInput = {
         type,
-        name: name ?? defaultNodeName(type, nodes.filter((n) => n.type === type).length),
-        position: position ?? { x: 80, y: 80 },
+        name: resolvedName,
+        position: resolvedPosition,
         data: data as Record<string, unknown>,
       };
       try {
@@ -259,34 +375,57 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     },
 
     updateNode(nodeId, patch) {
-      set({
-        nodes: get().nodes.map((n) =>
-          n.id === nodeId
-            ? ({
-                ...n,
-                ...('name' in patch && patch.name !== undefined ? { name: patch.name } : null),
-                ...('position' in patch && patch.position
-                  ? { position: patch.position }
-                  : null),
-                ...('data' in patch && patch.data
-                  ? { data: patch.data as never }
-                  : null),
-              } as AnyNode)
-            : n,
-        ),
-      });
+      const nextNodes = get().nodes.map((n) =>
+        n.id === nodeId
+          ? ({
+              ...n,
+              ...('name' in patch && patch.name !== undefined ? { name: patch.name } : null),
+              ...('position' in patch && patch.position
+                ? { position: patch.position }
+                : null),
+              ...('data' in patch && patch.data
+                ? { data: patch.data as never }
+                : null),
+            } as AnyNode)
+          : n,
+      );
+      set({ nodes: nextNodes });
+
+      const isPending = get().pendingNodeIds.includes(nodeId);
+      if (isPending) {
+        // Pending UI_ELEMENT: promote once the user picks a screen, otherwise
+        // stay client-only. Skip markDirty so the autosave payload doesn't
+        // try to send a still-incomplete node.
+        const updated = nextNodes.find((n) => n.id === nodeId);
+        if (updated && updated.type === 'UI_ELEMENT') {
+          const data = updated.data as UiElementData;
+          if (data.screenId) {
+            void promotePending(nodeId);
+          }
+        }
+        return;
+      }
+
       markDirty();
     },
 
     async deleteNode(nodeId) {
       const { project } = get();
       if (!project) return;
+      const wasPending = get().pendingNodeIds.includes(nodeId);
       // Optimistic — remove node + dependent edges from local store.
       const nodes = get().nodes.filter((n) => n.id !== nodeId);
       const edges = get().edges.filter(
         (e) => e.sourceId !== nodeId && e.targetId !== nodeId,
       );
-      set({ nodes, edges });
+      set({
+        nodes,
+        edges,
+        pendingNodeIds: get().pendingNodeIds.filter((id) => id !== nodeId),
+      });
+
+      // Pending nodes never reached the server — nothing to delete remotely.
+      if (wasPending) return;
 
       const activeBranchId = useBranchStore.getState().activeBranchId;
       if (activeBranchId) {
@@ -401,6 +540,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         edges: graph.edges,
         saveStatus: 'saved',
         lastSavedAt: Date.now(),
+        pendingNodeIds: [],
       });
     },
 
@@ -414,6 +554,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
           nodes: graph.nodes as AnyNode[],
           edges: graph.edges as Edge[],
           loadingProjectId: null,
+          pendingNodeIds: [],
         }));
       } catch (err) {
         set({ loadError: (err as Error).message, loadingProjectId: null });

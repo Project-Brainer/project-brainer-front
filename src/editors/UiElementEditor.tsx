@@ -34,7 +34,13 @@ export function UiElementEditor({ node }: { node: AnyNode }) {
       />
       <Select
         label="Belongs to screen"
-        hint="required"
+        hint={
+          data.screenId
+            ? 'required'
+            : screens.length === 0
+              ? 'create a screen first'
+              : 'pick a screen to save this element'
+        }
         value={data.screenId}
         options={screenOptions}
         onChange={(value) =>
