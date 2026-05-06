@@ -1,10 +1,17 @@
 import clsx from 'clsx';
 import { memo, useMemo } from 'react';
 import { Handle, Position, type NodeProps } from 'reactflow';
-import type { AnyNode, NodeType, Slot, SlotSourceKind } from '../../api/types';
+import type {
+  AnyNode,
+  NodeType,
+  Slot,
+  SlotSource,
+  SlotSourceKind,
+} from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { Pill } from '../../components/Pill';
 import { NODE_META } from '../../lib/nodeMeta';
+import { useGraphStore } from '../../store/graphStore';
 
 export interface BrainerNodeData {
   node: AnyNode;
@@ -170,6 +177,9 @@ const SOURCE_TONE: Record<SlotSourceKind, 'wired' | 'plain'> = {
 };
 
 function SlotsPreview({ node }: { node: AnyNode }) {
+  // Hooks must run unconditionally — bail-out happens after.
+  const allNodes = useGraphStore((s) => s.nodes);
+
   if (node.type !== 'SCREEN' && node.type !== 'UI_ELEMENT' && node.type !== 'ACTION') {
     return null;
   }
@@ -183,6 +193,8 @@ function SlotsPreview({ node }: { node: AnyNode }) {
     <ul className="pb-node__slots">
       {slots.map((s) => {
         const tone = SOURCE_TONE[s.source.kind];
+        const target = resolveSourceTarget(s.source, allNodes);
+        const titleSuffix = target ? ` ← ${target.full}` : '';
         return (
           <li
             key={s.id}
@@ -190,7 +202,7 @@ function SlotsPreview({ node }: { node: AnyNode }) {
               'pb-node__slot',
               tone === 'wired' && 'pb-node__slot--wired',
             )}
-            title={`${s.name} (${s.type}) — from ${s.source.kind}`}
+            title={`${s.name} (${s.type}) — from ${s.source.kind}${titleSuffix}`}
             data-anchor={`${node.id}::${s.id}`}
           >
             <Icon
@@ -200,11 +212,71 @@ function SlotsPreview({ node }: { node: AnyNode }) {
             />
             <span className="pb-node__slot-name">{s.name || '—'}</span>
             <span className="pb-node__slot-type pb-mono">{s.type}</span>
+            {target && (
+              <span
+                className={clsx(
+                  'pb-node__slot-target',
+                  'pb-mono',
+                  target.missing && 'pb-node__slot-target--missing',
+                )}
+              >
+                ← {target.short}
+              </span>
+            )}
           </li>
         );
       })}
     </ul>
   );
+}
+
+/**
+ * Resolve a slot's wired source (binding / apiResponse) to a human-readable
+ * target so it can be shown next to the slot name on the canvas card. Other
+ * source kinds return null — they're self-contained, no cross-node target
+ * to point at. `(missing)` is rendered for dangling refs so the user sees
+ * exactly what to fix.
+ */
+function resolveSourceTarget(
+  source: SlotSource,
+  nodes: AnyNode[],
+): { short: string; full: string; missing?: boolean } | null {
+  if (source.kind === 'binding') {
+    if (!source.fromNodeId) return null; // empty in-progress; warning panel covers it
+    const fromNode = nodes.find((n) => n.id === source.fromNodeId);
+    if (!fromNode) {
+      return { short: '(missing node)', full: '(missing node)', missing: true };
+    }
+    const fromSlots = ((fromNode.data as { slots?: Slot[] }).slots ?? []) as Slot[];
+    const fromSlot = fromSlots.find((sl) => sl.id === source.fromSlotId);
+    if (!fromSlot) {
+      return {
+        short: `${fromNode.name}.(missing slot)`,
+        full: `${fromNode.name}.(missing slot)`,
+        missing: true,
+      };
+    }
+    return {
+      short: `${fromNode.name}.${fromSlot.name}`,
+      full: `${fromNode.name}.${fromSlot.name}`,
+    };
+  }
+  if (source.kind === 'apiResponse') {
+    if (!source.endpointId) return null;
+    const ep = nodes.find((n) => n.id === source.endpointId);
+    if (!ep) {
+      return {
+        short: '(missing endpoint)',
+        full: '(missing endpoint)',
+        missing: true,
+      };
+    }
+    const path = source.jsonPath?.trim();
+    return path
+      ? { short: `${ep.name} ${path}`, full: `${ep.name} ${path}` }
+      : { short: ep.name, full: ep.name };
+  }
+  return null;
 }
 
 /**

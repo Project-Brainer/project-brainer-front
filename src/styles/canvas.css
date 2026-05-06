@@ -171,10 +171,18 @@
 .pb-node__slot {
   display: grid;
   grid-template-columns: 12px 1fr auto;
-  gap: 6px;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  row-gap: 0;
   align-items: center;
   padding: 1px 0;
   min-width: 0;
+}
+.pb-node__slot > .pb-node__slot-target {
+  /* second row, spans from the name column to the end so the "← …" hint
+     sits directly under the slot name (icon column stays empty). */
+  grid-column: 2 / -1;
+  grid-row: 2;
 }
 .pb-node__slot-icon {
   color: var(--fg-4);
