@@ -75,6 +75,13 @@
   opacity: 0.45;
 }
 
+/* Dataflow-related: faintly highlights nodes that share slot bindings,
+   apiResponse links, or CALLS request bindings with the selected node. */
+.pb-node--dataflow-related {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft, var(--accent));
+}
+
 .pb-node__handle {
   /* leverages base .react-flow__handle styles above */
 }

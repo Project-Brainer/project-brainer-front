@@ -26,6 +26,7 @@ import type {
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { allowedEdgeTypes, canConnect, defaultEdgeData } from '../lib/edgeCompat';
+import { relatedNodeIds } from '../lib/dataflow';
 import { BrainerNode } from './nodes/BrainerNode';
 import { BrainerEdge } from './edges/BrainerEdge';
 import { EdgeTypePicker } from './EdgeTypePicker';
@@ -49,13 +50,14 @@ const EDGE_TYPES: EdgeTypes = {
 function nodeForFlow(
   node: AnyNode,
   selected: boolean,
+  related: boolean,
   parentScreenId?: string,
 ): RFNode {
   const rf: RFNode = {
     id: node.id,
     type: 'brainer',
     position: node.position,
-    data: { node, selected },
+    data: { node, selected, related },
     selected,
   };
   if (parentScreenId) {
@@ -120,6 +122,13 @@ function CanvasInner() {
     }
   }, [initialViewport]);
 
+  // Set of node ids whose data flows to/from the currently selected node;
+  // those get a soft highlight on the canvas so you see "what's wired".
+  const dataflowRelated = useMemo<Set<string>>(() => {
+    if (!selectedNodeId) return new Set();
+    return relatedNodeIds(selectedNodeId, nodes, edges);
+  }, [selectedNodeId, nodes, edges]);
+
   const rfNodes = useMemo<RFNode[]>(() => {
     const screenIds = new Set(
       nodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
@@ -138,9 +147,14 @@ function CanvasInner() {
         const screenId = (n.data as UiElementData).screenId;
         if (screenId && screenIds.has(screenId)) parentScreenId = screenId;
       }
-      return nodeForFlow(n, n.id === selectedNodeId, parentScreenId);
+      return nodeForFlow(
+        n,
+        n.id === selectedNodeId,
+        dataflowRelated.has(n.id),
+        parentScreenId,
+      );
     });
-  }, [nodes, selectedNodeId]);
+  }, [nodes, selectedNodeId, dataflowRelated]);
 
   const rfEdges = useMemo<RFEdge[]>(() => {
     const real = edges.map((e) => edgeForFlow(e, e.id === selectedEdgeId));
