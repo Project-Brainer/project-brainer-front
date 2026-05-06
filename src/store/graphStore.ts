@@ -115,30 +115,6 @@ export interface GraphState {
   loadBranchGraph: (projectId: string, branchId: string) => Promise<void>;
 }
 
-/**
- * Re-attach client-only pending nodes (and their edges) onto the graph the
- * server returned from replaceGraph — those weren't sent in the payload, so
- * the response doesn't include them either.
- */
-function mergePendingIntoServerGraph(
-  state: GraphState,
-  serverNodes: AnyNode[],
-  serverEdges: Edge[],
-): { nodes: AnyNode[]; edges: Edge[] } {
-  if (state.pendingNodeIds.length === 0) {
-    return { nodes: serverNodes, edges: serverEdges };
-  }
-  const stillPending = new Set(state.pendingNodeIds);
-  const localPendingNodes = state.nodes.filter((n) => stillPending.has(n.id));
-  const localPendingEdges = state.edges.filter(
-    (e) => stillPending.has(e.sourceId) || stillPending.has(e.targetId),
-  );
-  return {
-    nodes: [...serverNodes, ...localPendingNodes],
-    edges: [...serverEdges, ...localPendingEdges],
-  };
-}
-
 export const useGraphStore = create<GraphState>()((set, get) => {
   const scheduleSave = debounce(async () => {
     await persistNow();
@@ -148,21 +124,30 @@ export const useGraphStore = create<GraphState>()((set, get) => {
   // Lives outside store state — purely a deduplication guard.
   const promoting = new Set<string>();
 
-  // Bumped on every local mutation that schedules a save. The save loop
-  // snapshots it before each PUT and re-checks on response: if the version
-  // moved on, the user has made newer edits, so the server's response is
-  // stale and we must NOT overwrite local state with it. The loop then
-  // sends another PUT with the latest state.
+  // Bumped on every local mutation that schedules a save. Used purely to
+  // detect "did anything change while a PUT was in flight?" — if so, the
+  // save loop sends one more PUT with the freshest state.
   let mutationVersion = 0;
 
   // Save serialisation — only one PUT in flight at a time. While a save is
-  // running, additional `markDirty()` calls just bump mutationVersion; the
-  // running loop notices and re-runs with the latest state on its next pass.
-  // Net effect: a burst of fast edits collapses into "first save (in
-  // progress) + one final save with the latest state", and concurrent
-  // out-of-order responses can't overwrite fresh local edits.
+  // running, `markDirty()` just bumps mutationVersion; the running loop
+  // notices and re-runs with the latest snapshot on its next pass. A burst
+  // of fast edits collapses into "first save (already running) + one final
+  // save with the latest state". Two PUTs are never in flight, so out-of-
+  // order responses are impossible.
   let saveInFlight = false;
 
+  /**
+   * Local state is authoritative for what the user sees. PUTs are
+   * fire-and-forget: we send the latest snapshot, treat the response as
+   * "ack" only, and never write server data back into the store. That's
+   * what eliminates every visible "snap back" — there's literally no code
+   * path that can replace a freshly-edited node with stale server data.
+   *
+   * (Initial load and explicit imports go through loadProject /
+   * replaceFromGraph / loadBranchGraph — those still take server data,
+   * because that's where it belongs.)
+   */
   const persistNow = async () => {
     if (saveInFlight) return;
     if (!get().project) return;
@@ -171,8 +156,6 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     set({ saveStatus: 'saving', lastSaveError: null });
 
     try {
-      // Loop until the local state matches what we just persisted. Each
-      // iteration sends one PUT with the freshest store snapshot.
       while (true) {
         const { project, nodes, edges, pendingNodeIds } = get();
         if (!project) break;
@@ -206,39 +189,15 @@ export const useGraphStore = create<GraphState>()((set, get) => {
 
         const activeBranchId = useBranchStore.getState().activeBranchId;
         if (activeBranchId) {
-          const updated = await branchesApi.replaceGraph(
-            project.id,
-            activeBranchId,
-            body,
-          );
-          if (mutationVersion !== versionAtSend) continue;
-          const merged = mergePendingIntoServerGraph(
-            get(),
-            updated.nodes as AnyNode[],
-            updated.edges as Edge[],
-          );
-          set({
-            nodes: merged.nodes,
-            edges: merged.edges,
-            saveStatus: 'saved',
-            lastSavedAt: Date.now(),
-          });
+          await branchesApi.replaceGraph(project.id, activeBranchId, body);
         } else {
-          const updated = await graphApi.replace(project.id, body);
-          if (mutationVersion !== versionAtSend) continue;
-          const merged = mergePendingIntoServerGraph(
-            get(),
-            updated.nodes,
-            updated.edges,
-          );
-          set({
-            project: updated.project,
-            nodes: merged.nodes,
-            edges: merged.edges,
-            saveStatus: 'saved',
-            lastSavedAt: Date.now(),
-          });
+          await graphApi.replace(project.id, body);
         }
+
+        // More edits during the PUT? Loop and send the freshest state.
+        if (mutationVersion !== versionAtSend) continue;
+
+        set({ saveStatus: 'saved', lastSavedAt: Date.now() });
         break;
       }
     } catch (err) {
