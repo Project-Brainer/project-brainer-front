@@ -45,6 +45,18 @@ export type RespondsWithEdgeData = {
   outcome: ResponseOutcome;
 };
 
+/** A single request-field binding on a CALLS edge. */
+export type RequestBinding = {
+  /** Dot path in the endpoint request schema, e.g. "email". */
+  field: string;
+  /** Slot id on the source node (the action). */
+  sourceSlotId: string;
+};
+
+export type CallsEdgeData = {
+  requestBindings?: RequestBinding[];
+};
+
 export const FIELD_TYPES = [
   'string',
   'number',
@@ -129,14 +141,26 @@ export const SLOT_TYPES = [
 ] as const;
 export type SlotType = (typeof SLOT_TYPES)[number];
 
-export const SLOT_SOURCE_KINDS = ['literal', 'userInput', 'route', 'cache'] as const;
+export const SLOT_SOURCE_KINDS = [
+  'literal',
+  'userInput',
+  'route',
+  'cache',
+  'binding',
+  'apiResponse',
+] as const;
 export type SlotSourceKind = (typeof SLOT_SOURCE_KINDS)[number];
 
 export type SlotSource =
   | { kind: 'literal'; value: unknown }
   | { kind: 'userInput' }
   | { kind: 'route'; param: string }
-  | { kind: 'cache'; key: string };
+  | { kind: 'cache'; key: string }
+  /** Pull from another node's slot. */
+  | { kind: 'binding'; fromNodeId: string; fromSlotId: string }
+  /** Pull from an API endpoint's response (requires a RESPONDS_WITH edge
+   *  from that endpoint to the slot's owning node). */
+  | { kind: 'apiResponse'; endpointId: string; jsonPath?: string };
 
 export interface Slot {
   id: string;

@@ -29,6 +29,7 @@ export function ActionEditor({ node }: { node: AnyNode }) {
         }
       />
       <SlotsEditor
+        nodeId={node.id}
         nodeType="ACTION"
         slots={data.slots ?? []}
         onChange={(slots: Slot[]) =>

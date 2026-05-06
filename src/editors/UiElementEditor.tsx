@@ -64,6 +64,7 @@ export function UiElementEditor({ node }: { node: AnyNode }) {
         }
       />
       <SlotsEditor
+        nodeId={node.id}
         nodeType="UI_ELEMENT"
         uiKind={data.kind}
         slots={data.slots ?? []}

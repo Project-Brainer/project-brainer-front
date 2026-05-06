@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
 import type {
+  AnyNode,
   NodeType,
   Slot,
   SlotSource,
   SlotSourceKind,
   SlotType,
+  UiElementData,
   UiElementKind,
 } from '../api/types';
 import { SLOT_TYPES } from '../api/types';
@@ -11,27 +14,43 @@ import { Button } from '../components/Button';
 import { FieldShell, Input, Select } from '../components/Field';
 import { Icon } from '../components/Icon';
 import { uuid } from '../lib/uuid';
+import { useGraphStore } from '../store/graphStore';
 
 /**
  * Slots editor — per-node panel that lets the user declare the typed
- * runtime values a node holds. Stage 1 sources (literal, userInput, route,
- * cache) only — bindings to other nodes / API responses come in stage 2.
+ * runtime values a node holds. Sources:
+ *   literal, userInput, route, cache, binding, apiResponse.
  *
  * Source availability is constrained by node type to match the backend's
- * cross-rule validation: userInput is only valid on UI_ELEMENT input/form;
- * route is only valid on SCREEN.
+ * cross-rule validation: userInput only on UI_ELEMENT input/form, route
+ * only on SCREEN. binding / apiResponse are always available — the UI
+ * picks the referenced node/slot/endpoint, but cross-graph integrity is
+ * still best-effort (graph.validator can flag broken refs separately).
  */
 export function SlotsEditor({
+  nodeId,
   nodeType,
   uiKind,
   slots,
   onChange,
 }: {
+  /** Owning node id — excluded from binding pickers (no self-reference). */
+  nodeId: string;
   nodeType: NodeType;
   uiKind?: UiElementKind;
   slots: Slot[];
   onChange: (next: Slot[]) => void;
 }) {
+  const allNodes = useGraphStore((s) => s.nodes);
+  const otherNodes = useMemo(
+    () => allNodes.filter((n) => n.id !== nodeId),
+    [allNodes, nodeId],
+  );
+  const apiNodes = useMemo(
+    () => allNodes.filter((n) => n.type === 'API_ENDPOINT'),
+    [allNodes],
+  );
+
   const availableSources = availableSourceKinds(nodeType, uiKind);
 
   const update = (id: string, patch: Partial<Slot>) => {
@@ -58,6 +77,8 @@ export function SlotsEditor({
             key={slot.id}
             slot={slot}
             availableSources={availableSources}
+            otherNodes={otherNodes}
+            apiNodes={apiNodes}
             onChange={(patch) => update(slot.id, patch)}
             onRemove={() => remove(slot.id)}
           />
@@ -73,11 +94,15 @@ export function SlotsEditor({
 function SlotRow({
   slot,
   availableSources,
+  otherNodes,
+  apiNodes,
   onChange,
   onRemove,
 }: {
   slot: Slot;
   availableSources: SlotSourceKind[];
+  otherNodes: AnyNode[];
+  apiNodes: AnyNode[];
   onChange: (patch: Partial<Slot>) => void;
   onRemove: () => void;
 }) {
@@ -117,7 +142,12 @@ function SlotRow({
           options={availableSources.map((k) => ({ value: k, label: SOURCE_LABELS[k] }))}
           onChange={onSourceKindChange}
         />
-        <SourceConfig source={slot.source} onChange={(source) => onChange({ source })} />
+        <SourceConfig
+          source={slot.source}
+          otherNodes={otherNodes}
+          apiNodes={apiNodes}
+          onChange={(source) => onChange({ source })}
+        />
       </div>
       {(slot.type === 'object' || slot.type === 'array<object>') && (
         <Input
@@ -134,9 +164,13 @@ function SlotRow({
 
 function SourceConfig({
   source,
+  otherNodes,
+  apiNodes,
   onChange,
 }: {
   source: SlotSource;
+  otherNodes: AnyNode[];
+  apiNodes: AnyNode[];
   onChange: (next: SlotSource) => void;
 }) {
   switch (source.kind) {
@@ -169,7 +203,117 @@ function SourceConfig({
           onChange={(e) => onChange({ kind: 'cache', key: e.target.value })}
         />
       );
+    case 'binding':
+      return (
+        <BindingPicker
+          fromNodeId={source.fromNodeId}
+          fromSlotId={source.fromSlotId}
+          otherNodes={otherNodes}
+          onChange={(fromNodeId, fromSlotId) =>
+            onChange({ kind: 'binding', fromNodeId, fromSlotId })
+          }
+        />
+      );
+    case 'apiResponse':
+      return (
+        <ApiResponsePicker
+          endpointId={source.endpointId}
+          jsonPath={source.jsonPath}
+          apiNodes={apiNodes}
+          onChange={(endpointId, jsonPath) =>
+            onChange({ kind: 'apiResponse', endpointId, jsonPath })
+          }
+        />
+      );
   }
+}
+
+function BindingPicker({
+  fromNodeId,
+  fromSlotId,
+  otherNodes,
+  onChange,
+}: {
+  fromNodeId: string;
+  fromSlotId: string;
+  otherNodes: AnyNode[];
+  onChange: (fromNodeId: string, fromSlotId: string) => void;
+}) {
+  const sourceNode = otherNodes.find((n) => n.id === fromNodeId);
+  const sourceSlots = nodeSlots(sourceNode);
+  const nodeOptions = [
+    { value: '', label: '— pick a node —' },
+    ...otherNodes
+      .filter((n) => nodeSlots(n).length > 0)
+      .map((n) => ({ value: n.id, label: `${n.type.toLowerCase()} · ${n.name}` })),
+  ];
+  const slotOptions = [
+    { value: '', label: sourceSlots.length === 0 ? '— no slots —' : '— pick a slot —' },
+    ...sourceSlots.map((s) => ({ value: s.id, label: s.name })),
+  ];
+
+  return (
+    <div className="pb-slot-row__source-stack">
+      <Select
+        aria-label="Source node"
+        value={fromNodeId}
+        options={nodeOptions}
+        onChange={(value) => onChange(value, '')}
+      />
+      <Select
+        aria-label="Source slot"
+        value={fromSlotId}
+        options={slotOptions}
+        onChange={(value) => onChange(fromNodeId, value)}
+      />
+    </div>
+  );
+}
+
+function ApiResponsePicker({
+  endpointId,
+  jsonPath,
+  apiNodes,
+  onChange,
+}: {
+  endpointId: string;
+  jsonPath?: string;
+  apiNodes: AnyNode[];
+  onChange: (endpointId: string, jsonPath?: string) => void;
+}) {
+  const endpointOptions = [
+    { value: '', label: '— pick an endpoint —' },
+    ...apiNodes.map((n) => ({ value: n.id, label: n.name })),
+  ];
+
+  return (
+    <div className="pb-slot-row__source-stack">
+      <Select
+        aria-label="Endpoint"
+        value={endpointId}
+        options={endpointOptions}
+        onChange={(value) => onChange(value, jsonPath)}
+      />
+      <Input
+        aria-label="Response JSON path"
+        placeholder="$.user.id (default $)"
+        value={jsonPath ?? ''}
+        onChange={(e) => onChange(endpointId, e.target.value || undefined)}
+      />
+    </div>
+  );
+}
+
+/** Read the slots a node exposes, regardless of node type. */
+function nodeSlots(node: AnyNode | undefined): Slot[] {
+  if (!node) return [];
+  if (node.type === 'SCREEN' || node.type === 'ACTION') {
+    return ((node.data as { slots?: Slot[] }).slots ?? []) as Slot[];
+  }
+  if (node.type === 'UI_ELEMENT') {
+    return ((node.data as UiElementData).slots ?? []) as Slot[];
+  }
+  return [];
 }
 
 const SOURCE_LABELS: Record<SlotSourceKind, string> = {
@@ -177,6 +321,8 @@ const SOURCE_LABELS: Record<SlotSourceKind, string> = {
   userInput: 'user input',
   route: 'route param',
   cache: 'cache',
+  binding: 'from node slot',
+  apiResponse: 'from API response',
 };
 
 function defaultSourceForKind(kind: SlotSourceKind): SlotSource {
@@ -189,6 +335,10 @@ function defaultSourceForKind(kind: SlotSourceKind): SlotSource {
       return { kind: 'route', param: '' };
     case 'cache':
       return { kind: 'cache', key: '' };
+    case 'binding':
+      return { kind: 'binding', fromNodeId: '', fromSlotId: '' };
+    case 'apiResponse':
+      return { kind: 'apiResponse', endpointId: '' };
   }
 }
 
@@ -196,14 +346,14 @@ function availableSourceKinds(
   nodeType: NodeType,
   uiKind?: UiElementKind,
 ): SlotSourceKind[] {
-  const base: SlotSourceKind[] = ['literal', 'cache'];
-  if (nodeType === 'SCREEN') return [...base, 'route'];
+  // Cross-node sources are always available; the picker resolves the target.
+  const base: SlotSourceKind[] = ['literal', 'cache', 'binding', 'apiResponse'];
+  if (nodeType === 'SCREEN') return ['literal', 'route', 'cache', 'binding', 'apiResponse'];
   if (nodeType === 'UI_ELEMENT') {
     return uiKind === 'input' || uiKind === 'form'
-      ? [...base, 'userInput']
+      ? ['literal', 'userInput', 'cache', 'binding', 'apiResponse']
       : base;
   }
-  // ACTION — stage 1 has no node-specific extras.
   return base;
 }
 
