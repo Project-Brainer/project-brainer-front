@@ -145,6 +145,7 @@ const SOURCE_ICON: Record<SlotSourceKind, string> = {
   cache: 'database',
   binding: 'arrow-down-right',
   apiResponse: 'cloud',
+  computed: 'braces',
 };
 
 const SOURCE_TONE: Record<SlotSourceKind, 'wired' | 'plain'> = {
@@ -154,6 +155,7 @@ const SOURCE_TONE: Record<SlotSourceKind, 'wired' | 'plain'> = {
   cache: 'plain',
   binding: 'wired',
   apiResponse: 'wired',
+  computed: 'plain',
 };
 
 function SlotsPreview({ node }: { node: AnyNode }) {
