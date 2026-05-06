@@ -11,7 +11,7 @@ import type {
 } from '../api/types';
 import { SLOT_TYPES } from '../api/types';
 import { Button } from '../components/Button';
-import { FieldShell, Input, Select } from '../components/Field';
+import { FieldShell, Input, Select, Textarea } from '../components/Field';
 import { Icon } from '../components/Icon';
 import { nodePickerLabel } from '../lib/nodeMeta';
 import { uuid } from '../lib/uuid';
@@ -20,7 +20,7 @@ import { useGraphStore } from '../store/graphStore';
 /**
  * Slots editor — per-node panel that lets the user declare the typed
  * runtime values a node holds. Sources:
- *   literal, userInput, route, cache, binding, apiResponse.
+ *   literal, userInput, route, cache, binding, apiResponse, computed.
  *
  * Source availability is constrained by node type to match the backend's
  * cross-rule validation: userInput only on UI_ELEMENT input/form, route
@@ -80,6 +80,9 @@ export function SlotsEditor({
             availableSources={availableSources}
             otherNodes={otherNodes}
             apiNodes={apiNodes}
+            siblingSlotNames={slots
+              .filter((s) => s.id !== slot.id && s.name)
+              .map((s) => s.name)}
             onChange={(patch) => update(slot.id, patch)}
             onRemove={() => remove(slot.id)}
           />
@@ -97,6 +100,7 @@ function SlotRow({
   availableSources,
   otherNodes,
   apiNodes,
+  siblingSlotNames,
   onChange,
   onRemove,
 }: {
@@ -104,6 +108,7 @@ function SlotRow({
   availableSources: SlotSourceKind[];
   otherNodes: AnyNode[];
   apiNodes: AnyNode[];
+  siblingSlotNames: string[];
   onChange: (patch: Partial<Slot>) => void;
   onRemove: () => void;
 }) {
@@ -147,6 +152,7 @@ function SlotRow({
           source={slot.source}
           otherNodes={otherNodes}
           apiNodes={apiNodes}
+          siblingSlotNames={siblingSlotNames}
           onChange={(source) => onChange({ source })}
         />
       </div>
@@ -167,11 +173,13 @@ function SourceConfig({
   source,
   otherNodes,
   apiNodes,
+  siblingSlotNames,
   onChange,
 }: {
   source: SlotSource;
   otherNodes: AnyNode[];
   apiNodes: AnyNode[];
+  siblingSlotNames: string[];
   onChange: (next: SlotSource) => void;
 }) {
   switch (source.kind) {
@@ -225,6 +233,23 @@ function SourceConfig({
             onChange({ kind: 'apiResponse', endpointId, jsonPath })
           }
         />
+      );
+    case 'computed':
+      return (
+        <div className="pb-slot-row__source-stack">
+          <Textarea
+            aria-label="Computed template"
+            placeholder={'Hello, ${firstName}!'}
+            rows={2}
+            value={source.template}
+            onChange={(e) => onChange({ kind: 'computed', template: e.target.value })}
+          />
+          <span className="pb-slot-row__hint pb-mono">
+            {siblingSlotNames.length > 0
+              ? `available: ${siblingSlotNames.join(', ')}`
+              : 'no other slots on this node yet'}
+          </span>
+        </div>
       );
   }
 }
@@ -324,6 +349,7 @@ const SOURCE_LABELS: Record<SlotSourceKind, string> = {
   cache: 'cache',
   binding: 'from node slot',
   apiResponse: 'from API response',
+  computed: 'computed (template)',
 };
 
 function defaultSourceForKind(kind: SlotSourceKind): SlotSource {
@@ -340,6 +366,8 @@ function defaultSourceForKind(kind: SlotSourceKind): SlotSource {
       return { kind: 'binding', fromNodeId: '', fromSlotId: '' };
     case 'apiResponse':
       return { kind: 'apiResponse', endpointId: '' };
+    case 'computed':
+      return { kind: 'computed', template: '' };
   }
 }
 
@@ -348,11 +376,13 @@ function availableSourceKinds(
   uiKind?: UiElementKind,
 ): SlotSourceKind[] {
   // Cross-node sources are always available; the picker resolves the target.
-  const base: SlotSourceKind[] = ['literal', 'cache', 'binding', 'apiResponse'];
-  if (nodeType === 'SCREEN') return ['literal', 'route', 'cache', 'binding', 'apiResponse'];
+  // `computed` is purely local (same-node template), so it's always offered.
+  const base: SlotSourceKind[] = ['literal', 'cache', 'binding', 'apiResponse', 'computed'];
+  if (nodeType === 'SCREEN')
+    return ['literal', 'route', 'cache', 'binding', 'apiResponse', 'computed'];
   if (nodeType === 'UI_ELEMENT') {
     return uiKind === 'input' || uiKind === 'form'
-      ? ['literal', 'userInput', 'cache', 'binding', 'apiResponse']
+      ? ['literal', 'userInput', 'cache', 'binding', 'apiResponse', 'computed']
       : base;
   }
   return base;

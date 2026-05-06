@@ -148,6 +148,7 @@ export const SLOT_SOURCE_KINDS = [
   'cache',
   'binding',
   'apiResponse',
+  'computed',
 ] as const;
 export type SlotSourceKind = (typeof SLOT_SOURCE_KINDS)[number];
 
@@ -160,7 +161,10 @@ export type SlotSource =
   | { kind: 'binding'; fromNodeId: string; fromSlotId: string }
   /** Pull from an API endpoint's response (requires a RESPONDS_WITH edge
    *  from that endpoint to the slot's owning node). */
-  | { kind: 'apiResponse'; endpointId: string; jsonPath?: string };
+  | { kind: 'apiResponse'; endpointId: string; jsonPath?: string }
+  /** String template referencing other slots on the SAME node via
+   *  `${slotName}`. Stage 1: pure interpolation, no expressions. */
+  | { kind: 'computed'; template: string };
 
 export interface Slot {
   id: string;
