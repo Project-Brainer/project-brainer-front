@@ -1,8 +1,14 @@
 import { useMemo } from 'react';
-import type { AnyNode, UiElementData, UiElementKind } from '../api/types';
+import type {
+  AnyNode,
+  Slot,
+  UiElementData,
+  UiElementKind,
+} from '../api/types';
 import { UI_ELEMENT_KINDS } from '../api/types';
 import { Input, Select } from '../components/Field';
 import { useGraphStore } from '../store/graphStore';
+import { SlotsEditor } from './SlotsEditor';
 
 export function UiElementEditor({ node }: { node: AnyNode }) {
   const updateNode = useGraphStore((s) => s.updateNode);
@@ -54,6 +60,16 @@ export function UiElementEditor({ node }: { node: AnyNode }) {
         onChange={(e) =>
           updateNode(node.id, {
             data: { ...data, label: e.target.value },
+          })
+        }
+      />
+      <SlotsEditor
+        nodeType="UI_ELEMENT"
+        uiKind={data.kind}
+        slots={data.slots ?? []}
+        onChange={(slots: Slot[]) =>
+          updateNode(node.id, {
+            data: { ...data, slots: slots.length > 0 ? slots : undefined },
           })
         }
       />
