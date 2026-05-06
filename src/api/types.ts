@@ -113,17 +113,55 @@ export type Position = { x: number; y: number };
 export type Viewport = { x: number; y: number; zoom: number };
 
 // ---------------------------------------------------------------------------
+// State slots — typed, named values attached to a node, fed from a source.
+// ---------------------------------------------------------------------------
+
+/** Types a state slot may declare (mirrors API Endpoint schema types). */
+export const SLOT_TYPES = [
+  'string',
+  'number',
+  'date',
+  'file',
+  'boolean',
+  'enum',
+  'object',
+  'array<object>',
+] as const;
+export type SlotType = (typeof SLOT_TYPES)[number];
+
+export const SLOT_SOURCE_KINDS = ['literal', 'userInput', 'route', 'cache'] as const;
+export type SlotSourceKind = (typeof SLOT_SOURCE_KINDS)[number];
+
+export type SlotSource =
+  | { kind: 'literal'; value: unknown }
+  | { kind: 'userInput' }
+  | { kind: 'route'; param: string }
+  | { kind: 'cache'; key: string };
+
+export interface Slot {
+  id: string;
+  name: string;
+  type: SlotType;
+  /** Data Model name for object / array<object> slots. */
+  ref?: string;
+  source: SlotSource;
+  description?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Node data shapes
 // ---------------------------------------------------------------------------
 
 export type ScreenData = {
   description?: string;
+  slots?: Slot[];
 };
 
 export type UiElementData = {
   kind: UiElementKind;
   screenId: string;
   label?: string;
+  slots?: Slot[];
 };
 
 export type DataModelField = {
@@ -148,6 +186,7 @@ export type ApiEndpointData = {
 export type ActionData = {
   kind: ActionKind;
   description?: string;
+  slots?: Slot[];
 };
 
 export type RoleData = {
