@@ -35,6 +35,7 @@ import type {
 } from '../api/types';
 import { debounce } from '../lib/debounce';
 import { defaultNodeData, defaultNodeName } from '../lib/nodeMeta';
+import { uuid } from '../lib/uuid';
 
 const AUTOSAVE_MS = 600;
 
@@ -352,7 +353,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       if (activeBranchId || isPendingUiElement) {
         const now = new Date().toISOString();
         const localNode: AnyNode = {
-          id: crypto.randomUUID(),
+          id: uuid(),
           projectId: project.id,
           type,
           name: resolvedName,
@@ -467,7 +468,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         // replaceGraph will compute the ADD delta vs parent and persist it.
         const now = new Date().toISOString();
         const branchEdge: Edge = {
-          id: crypto.randomUUID(),
+          id: uuid(),
           projectId: project.id,
           sourceId: input.sourceId,
           targetId: input.targetId,
