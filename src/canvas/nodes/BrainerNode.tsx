@@ -1,10 +1,17 @@
 import clsx from 'clsx';
 import { memo, useMemo } from 'react';
 import { Handle, Position, type NodeProps } from 'reactflow';
-import type { AnyNode, NodeType, Slot, SlotSourceKind } from '../../api/types';
+import type {
+  AnyNode,
+  NodeType,
+  Slot,
+  SlotSource,
+  SlotSourceKind,
+} from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { Pill } from '../../components/Pill';
 import { NODE_META } from '../../lib/nodeMeta';
+import { useGraphStore } from '../../store/graphStore';
 
 export interface BrainerNodeData {
   node: AnyNode;
@@ -159,6 +166,12 @@ const SOURCE_TONE: Record<SlotSourceKind, 'wired' | 'plain'> = {
 };
 
 function SlotsPreview({ node }: { node: AnyNode }) {
+  // Reading the full nodes list lets us resolve binding / apiResponse refs
+  // to a human label ("← Login.email") instead of opaque ids. Hook must
+  // run unconditionally — the early returns below are effectively type
+  // guards (a node's type doesn't change between renders).
+  const allNodes = useGraphStore((s) => s.nodes);
+
   // Slots only live on Screen / UI Element / Action right now.
   if (node.type !== 'SCREEN' && node.type !== 'UI_ELEMENT' && node.type !== 'ACTION') {
     return null;
@@ -173,6 +186,11 @@ function SlotsPreview({ node }: { node: AnyNode }) {
     <ul className="pb-node__slots">
       {visible.map((s) => {
         const tone = SOURCE_TONE[s.source.kind];
+        const target = resolveSlotTarget(s.source, allNodes);
+        const titleParts = [`${s.name} (${s.type}) — from ${s.source.kind}`];
+        if (target) {
+          titleParts.push(target.missing ? '(missing target)' : `← ${target.text}`);
+        }
         return (
           <li
             key={s.id}
@@ -180,14 +198,26 @@ function SlotsPreview({ node }: { node: AnyNode }) {
               'pb-node__slot',
               tone === 'wired' && 'pb-node__slot--wired',
             )}
-            title={`${s.name} (${s.type}) — from ${s.source.kind}`}
+            title={titleParts.join(' ')}
           >
             <Icon
               name={SOURCE_ICON[s.source.kind]}
               size={10}
               className="pb-node__slot-icon"
             />
-            <span className="pb-node__slot-name">{s.name || '—'}</span>
+            <div className="pb-node__slot-text">
+              <span className="pb-node__slot-name">{s.name || '—'}</span>
+              {target && (
+                <span
+                  className={clsx(
+                    'pb-node__slot-target',
+                    target.missing && 'pb-node__slot-target--missing',
+                  )}
+                >
+                  ← {target.missing ? '(missing)' : target.text}
+                </span>
+              )}
+            </div>
             <span className="pb-node__slot-type pb-mono">{s.type}</span>
           </li>
         );
@@ -197,6 +227,41 @@ function SlotsPreview({ node }: { node: AnyNode }) {
       )}
     </ul>
   );
+}
+
+function readSlots(node: AnyNode): Slot[] {
+  return ((node.data as { slots?: Slot[] }).slots ?? []) as Slot[];
+}
+
+/**
+ * Build the "← target" hint shown next to a wired slot. Returns null for
+ * sources that don't reference another node. `missing: true` flags refs
+ * whose target node has been deleted so the row renders in a warning tone.
+ */
+function resolveSlotTarget(
+  source: SlotSource,
+  nodes: AnyNode[],
+): { text: string; missing: boolean } | null {
+  if (source.kind === 'binding') {
+    if (!source.fromNodeId) return null;
+    const target = nodes.find((n) => n.id === source.fromNodeId);
+    if (!target) return { text: '', missing: true };
+    const targetSlot = source.fromSlotId
+      ? readSlots(target).find((s) => s.id === source.fromSlotId)
+      : undefined;
+    const slotName = targetSlot?.name ?? '?';
+    const nodeName = target.name || 'Untitled';
+    return { text: `${nodeName}.${slotName}`, missing: false };
+  }
+  if (source.kind === 'apiResponse') {
+    if (!source.endpointId) return null;
+    const target = nodes.find((n) => n.id === source.endpointId);
+    if (!target) return { text: '', missing: true };
+    const nodeName = target.name || 'Untitled';
+    const path = source.jsonPath?.trim();
+    return { text: path ? `${nodeName} ${path}` : nodeName, missing: false };
+  }
+  return null;
 }
 
 export const BrainerNode = memo(BrainerNodeImpl);

@@ -17,6 +17,7 @@ export function ValidationPanel() {
   const setError = useUiStore((s) => s.setValidationError);
   const selectNode = useUiStore((s) => s.selectNode);
   const selectEdge = useUiStore((s) => s.selectEdge);
+  const focusNode = useUiStore((s) => s.focusNode);
 
   const errorCount = issues.filter((i) => i.severity === 'error').length;
   const warnCount = issues.filter((i) => i.severity === 'warning').length;
@@ -80,30 +81,39 @@ export function ValidationPanel() {
           </div>
 
           <ul className="pb-validation-list">
-            {issues.map((issue, i) => (
-              <li
-                key={i}
-                className={clsx(
-                  'pb-validation-item',
-                  `pb-validation-item--${issue.severity}`,
-                )}
-              >
-                <button
-                  type="button"
-                  className="pb-validation-item__btn"
-                  onClick={() => focusIssue(issue, selectNode, selectEdge)}
+            {issues.map((issue, i) => {
+              const hasTarget = Boolean(issue.nodeId || issue.edgeId);
+              return (
+                <li
+                  key={i}
+                  className={clsx(
+                    'pb-validation-item',
+                    `pb-validation-item--${issue.severity}`,
+                    !hasTarget && 'pb-validation-item--inert',
+                  )}
                 >
-                  <span className="pb-validation-item__head">
-                    <span className="pb-validation-item__code pb-mono">
-                      {issue.code}
+                  <button
+                    type="button"
+                    className="pb-validation-item__btn"
+                    disabled={!hasTarget}
+                    onClick={
+                      hasTarget
+                        ? () => focusIssue(issue, selectNode, selectEdge, focusNode)
+                        : undefined
+                    }
+                  >
+                    <span className="pb-validation-item__head">
+                      <span className="pb-validation-item__code pb-mono">
+                        {issue.code}
+                      </span>
                     </span>
-                  </span>
-                  <span className="pb-validation-item__msg">
-                    {issue.message}
-                  </span>
-                </button>
-              </li>
-            ))}
+                    <span className="pb-validation-item__msg">
+                      {issue.message}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
@@ -115,7 +125,12 @@ function focusIssue(
   issue: ValidationIssue,
   selectNode: (id: string | null) => void,
   selectEdge: (id: string | null) => void,
+  focusNode: (id: string) => void,
 ) {
-  if (issue.nodeId) selectNode(issue.nodeId);
-  else if (issue.edgeId) selectEdge(issue.edgeId);
+  if (issue.nodeId) {
+    selectNode(issue.nodeId);
+    focusNode(issue.nodeId);
+  } else if (issue.edgeId) {
+    selectEdge(issue.edgeId);
+  }
 }
