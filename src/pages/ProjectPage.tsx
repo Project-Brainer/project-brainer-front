@@ -37,6 +37,10 @@ export function ProjectPage() {
   const selectedNodeId = useUiStore((s) => s.selectedNodeId);
   const selectedEdgeId = useUiStore((s) => s.selectedEdgeId);
   const openPrompt = useUiStore((s) => s.openPromptModal);
+  const sidebarOpen = useUiStore((s) => s.sidebarOpen);
+  const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const toggleRightPanel = useUiStore((s) => s.toggleRightPanel);
 
   const activeBranchId = useBranchStore((s) => s.activeBranchId);
   const openCommitModal = useBranchStore((s) => s.openCommitModal);
@@ -137,10 +141,32 @@ export function ProjectPage() {
       </header>
 
       {mode === 'design' ? (
-        <div className="pb-project-body">
-          <Sidebar />
-          <Canvas />
+        <div
+          className="pb-project-body"
+          style={{
+            gridTemplateColumns: `${sidebarOpen ? '240px' : '0px'} 1fr ${rightPanelOpen ? '320px' : '0px'}`,
+          }}
+        >
+          <Sidebar open={sidebarOpen} />
+          <div className="pb-canvas-wrapper">
+            <button
+              className={`pb-panel-toggle pb-panel-toggle--left${sidebarOpen ? ' pb-panel-toggle--open' : ''}`}
+              onClick={toggleSidebar}
+              title={sidebarOpen ? 'Скрыть панель элементов' : 'Показать панель элементов'}
+            >
+              <Icon name="chevron-right" size={14} className={sidebarOpen ? 'pb-rotate-180' : ''} />
+            </button>
+            <Canvas />
+            <button
+              className={`pb-panel-toggle pb-panel-toggle--right${rightPanelOpen ? ' pb-panel-toggle--open' : ''}`}
+              onClick={toggleRightPanel}
+              title={rightPanelOpen ? 'Скрыть инспектор' : 'Показать инспектор'}
+            >
+              <Icon name="chevron-right" size={14} className={rightPanelOpen ? '' : 'pb-rotate-180'} />
+            </button>
+          </div>
           <RightPanel
+            open={rightPanelOpen}
             selectedNode={selectedNode ?? null}
             selectedEdge={selectedEdge ?? null}
           />
@@ -156,7 +182,7 @@ export function ProjectPage() {
   );
 }
 
-function Sidebar() {
+function Sidebar({ open }: { open: boolean }) {
   const createNode = useGraphStore((s) => s.createNode);
   const nodes = useGraphStore((s) => s.nodes);
   const selectedNodeId = useUiStore((s) => s.selectedNodeId);
@@ -173,7 +199,7 @@ function Sidebar() {
   }, [nodes]);
 
   return (
-    <aside className="pb-sidebar">
+    <aside className={`pb-sidebar${open ? '' : ' pb-sidebar--hidden'}`}>
       <div className="pb-sidebar__group">
         <div className="pb-sidebar__title">Elements</div>
         {(Object.keys(NODE_META) as NodeType[]).map((type) => {
@@ -237,14 +263,16 @@ function Sidebar() {
 }
 
 function RightPanel({
+  open,
   selectedNode,
   selectedEdge,
 }: {
+  open: boolean;
   selectedNode: ReturnType<typeof useGraphStore.getState>['nodes'][number] | null;
   selectedEdge: ReturnType<typeof useGraphStore.getState>['edges'][number] | null;
 }) {
   return (
-    <aside className="pb-rightpanel">
+    <aside className={`pb-rightpanel${open ? '' : ' pb-rightpanel--hidden'}`}>
       <header className="pb-rightpanel__header">
         <span className="pb-rightpanel__title">
           {selectedNode

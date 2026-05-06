@@ -191,16 +191,24 @@
   grid-template-columns: 240px 1fr 320px;
   height: 100%;
   min-height: 0;
+  transition: grid-template-columns var(--dur-base) var(--ease-out);
 }
 
 .pb-sidebar {
   border-right: 1px solid var(--border-hairline);
   background: var(--bg-raised);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--space-5) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  transition: padding var(--dur-base) var(--ease-out);
+}
+
+.pb-sidebar--hidden {
+  padding: 0;
+  overflow: hidden;
 }
 
 .pb-sidebar__group {
@@ -219,19 +227,71 @@
 }
 
 
+.pb-canvas-wrapper {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .pb-canvas-area {
   position: relative;
   background: var(--bg-canvas);
   min-height: 0;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+/* -------- Panel toggle buttons -------- */
+
+.pb-panel-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--fg-3);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.pb-panel-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--fg-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.pb-panel-toggle--left {
+  left: 4px;
+}
+
+.pb-panel-toggle--right {
+  right: 4px;
 }
 
 .pb-rightpanel {
   border-left: 1px solid var(--border-hairline);
   background: var(--bg-surface);
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  transition: padding var(--dur-base) var(--ease-out);
+}
+
+.pb-rightpanel--hidden {
+  overflow: hidden;
 }
 
 .pb-rightpanel__header {
