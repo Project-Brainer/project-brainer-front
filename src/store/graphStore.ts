@@ -17,6 +17,7 @@ import { edgesApi } from '../api/edges';
 import { graphApi } from '../api/graph';
 import { nodesApi } from '../api/nodes';
 import { projectsApi } from '../api/projects';
+import { validationApi } from '../api/validation';
 import { useBranchStore } from './branchStore';
 import { useUiStore } from './uiStore';
 import type {
@@ -38,6 +39,10 @@ import { defaultNodeData, defaultNodeName } from '../lib/nodeMeta';
 import { uuid } from '../lib/uuid';
 
 const AUTOSAVE_MS = 600;
+/** Debounce window for the post-save validation refresh. Validation is a
+ *  separate POST and we don't want to spam it during a burst of edits, but
+ *  we do want it to settle ~1s after the user stops so warnings stay live. */
+const VALIDATION_DEBOUNCE_MS = 1000;
 
 export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -198,6 +203,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         if (mutationVersion !== versionAtSend) continue;
 
         set({ saveStatus: 'saved', lastSavedAt: Date.now() });
+        scheduleValidate();
         break;
       }
     } catch (err) {
@@ -215,6 +221,25 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     set({ saveStatus: 'pending' });
     scheduleSave();
   };
+
+  /**
+   * Auto-run validation after a successful save (and on initial load).
+   * Debounced so a burst of saves only triggers one validation call after
+   * the user stops editing. Errors don't block the user — surfaced in the
+   * inspector's Validation panel via uiStore.
+   */
+  const scheduleValidate = debounce(async () => {
+    const projectId = get().project?.id;
+    if (!projectId) return;
+    const ui = useUiStore.getState();
+    ui.setValidationRunning(true);
+    try {
+      const result = await validationApi.run(projectId);
+      useUiStore.getState().setValidation(result.issues);
+    } catch (err) {
+      useUiStore.getState().setValidationError((err as Error).message);
+    }
+  }, VALIDATION_DEBOUNCE_MS);
 
   /**
    * Promote a locally-created UI_ELEMENT to the server.
@@ -276,6 +301,10 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     pendingNodeIds: [],
 
     async loadProject(projectId) {
+      // Clear stale validation from a previous project so the panel doesn't
+      // briefly show old warnings until the auto-run completes.
+      useUiStore.getState().setValidation([]);
+      scheduleValidate.cancel();
       set({
         loadingProjectId: projectId,
         loadError: null,
@@ -294,6 +323,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
           edges: graph.edges,
           loadingProjectId: null,
         });
+        scheduleValidate();
       } catch (err) {
         set({
           loadError: (err as Error).message,
@@ -304,6 +334,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
 
     reset() {
       scheduleSave.cancel();
+      scheduleValidate.cancel();
       promoting.clear();
       set({
         project: null,
@@ -612,6 +643,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
           loadingProjectId: null,
           pendingNodeIds: [],
         }));
+        scheduleValidate();
       } catch (err) {
         set({ loadError: (err as Error).message, loadingProjectId: null });
       }

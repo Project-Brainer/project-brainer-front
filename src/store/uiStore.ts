@@ -69,6 +69,7 @@ export const useUiStore = create<UiState>()((set) => ({
       validationIssues: issues,
       validationRunAt: Date.now(),
       validationError: null,
+      validationRunning: false,
     });
   },
   setValidationRunning(running) {
