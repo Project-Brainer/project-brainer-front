@@ -10,6 +10,10 @@ export interface BrainerNodeData {
   node: AnyNode;
   selected?: boolean;
   forbidden?: boolean;
+  /** True if this node shares a data-flow context with the selected node
+   *  (incoming/outgoing slot bindings, apiResponse listeners, CALLS request
+   *  bindings) — soft-highlights it on the canvas. */
+  related?: boolean;
 }
 
 function nodeSubtitle(node: AnyNode): string | null {
@@ -48,6 +52,7 @@ function BrainerNodeImpl({ data, selected }: NodeProps<BrainerNodeData>) {
         `pb-node--${node.type.toLowerCase()}`,
         selected && 'pb-node--selected',
         data.forbidden && 'pb-node--forbidden',
+        data.related && !selected && 'pb-node--dataflow-related',
       )}
       data-type={node.type}
     >
