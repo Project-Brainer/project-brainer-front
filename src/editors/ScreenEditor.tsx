@@ -21,6 +21,7 @@ export function ScreenEditor({ node }: { node: AnyNode }) {
         }
       />
       <SlotsEditor
+        nodeId={node.id}
         nodeType="SCREEN"
         slots={data.slots ?? []}
         onChange={(slots: Slot[]) =>
