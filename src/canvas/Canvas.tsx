@@ -3,6 +3,7 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
+  MiniMap,
   ReactFlowProvider,
   type Connection,
   type Edge as RFEdge,
@@ -24,6 +25,7 @@ import type {
   Position,
   UiElementData,
 } from '../api/types';
+import { GLOBAL_NODE_TYPES } from '../api/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { allowedEdgeTypes, canConnect, defaultEdgeData } from '../lib/edgeCompat';
@@ -100,6 +102,7 @@ function CanvasInner() {
   const selectedNodeId = useUiStore((s) => s.selectedNodeId);
   const selectedEdgeId = useUiStore((s) => s.selectedEdgeId);
   const focusNodeId = useUiStore((s) => s.focusNodeId);
+  const focusedPageId = useUiStore((s) => s.focusedPageId);
   const selectNode = useUiStore((s) => s.selectNode);
   const selectEdge = useUiStore((s) => s.selectEdge);
   const clearSelection = useUiStore((s) => s.clearSelection);
@@ -149,11 +152,22 @@ function CanvasInner() {
     return m;
   }, [edges]);
 
+  // Apply focus-mode filter: if focusedPageId is set, show only nodes that
+  // belong to that page or are global (DATA_MODEL, API_ENDPOINT).
+  const visibleNodes = useMemo<AnyNode[]>(() => {
+    if (!focusedPageId) return nodes;
+    return nodes.filter(
+      (n) =>
+        (GLOBAL_NODE_TYPES as readonly string[]).includes(n.type) ||
+        n.pageId === focusedPageId,
+    );
+  }, [nodes, focusedPageId]);
+
   const rfNodes = useMemo<RFNode[]>(() => {
     const screenIds = new Set(
-      nodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
+      visibleNodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
     );
-    const sorted = [...nodes].sort((a, b) => {
+    const sorted = [...visibleNodes].sort((a, b) => {
       if (a.type === 'SCREEN' && b.type !== 'SCREEN') return -1;
       if (b.type === 'SCREEN' && a.type !== 'SCREEN') return 1;
       return 0;
@@ -173,15 +187,20 @@ function CanvasInner() {
         n.type === 'API_ENDPOINT' ? requestFieldsByEndpoint.get(n.id) : undefined,
       );
     });
-  }, [nodes, selectedNodeId, related, dataflow, requestFieldsByEndpoint]);
+  }, [visibleNodes, selectedNodeId, related, dataflow, requestFieldsByEndpoint]);
 
   const rfEdges = useMemo<RFEdge[]>(() => {
-    const real = edges.map((e) => edgeForFlow(e, e.id === selectedEdgeId));
+    const visibleIds = new Set(visibleNodes.map((n) => n.id));
+    // Only show edges where both endpoints are visible.
+    const visibleEdges = edges.filter(
+      (e) => visibleIds.has(e.sourceId) && visibleIds.has(e.targetId),
+    );
+    const real = visibleEdges.map((e) => edgeForFlow(e, e.id === selectedEdgeId));
     const screenIds = new Set(
-      nodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
+      visibleNodes.filter((n) => n.type === 'SCREEN').map((n) => n.id),
     );
     const synthetic: RFEdge[] = [];
-    for (const n of nodes) {
+    for (const n of visibleNodes) {
       if (n.type !== 'UI_ELEMENT') continue;
       const screenId = (n.data as UiElementData).screenId;
       if (!screenId || !screenIds.has(screenId)) continue;
@@ -203,7 +222,7 @@ function CanvasInner() {
       });
     }
     return [...real, ...synthetic];
-  }, [edges, nodes, selectedEdgeId]);
+  }, [edges, visibleNodes, selectedEdgeId]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -392,7 +411,23 @@ function CanvasInner() {
           showInteractive={false}
           className="pb-rf-controls"
         />
-        <SlotWires nodes={nodes} edges={edges} wrapperRef={wrapperRef} />
+        <MiniMap
+          position="bottom-left"
+          className="pb-minimap"
+          nodeColor={(n) => {
+            const t = (n.data as { node?: AnyNode })?.node?.type;
+            if (t === 'SCREEN') return 'var(--node-screen-bg)';
+            if (t === 'UI_ELEMENT') return 'var(--node-ui-bg)';
+            if (t === 'DATA_MODEL') return 'var(--node-model-bg)';
+            if (t === 'API_ENDPOINT') return 'var(--node-api-bg)';
+            if (t === 'ACTION') return 'var(--accent-soft)';
+            if (t === 'ROLE') return 'var(--node-role-bg)';
+            return 'var(--neutral-2)';
+          }}
+          maskColor="var(--canvas-minimap-mask, rgba(0,0,0,0.08))"
+          style={{ borderRadius: 8 }}
+        />
+        <SlotWires nodes={visibleNodes} edges={edges} wrapperRef={wrapperRef} />
       </ReactFlow>
 
       {picker && (

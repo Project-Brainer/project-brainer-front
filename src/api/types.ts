@@ -243,9 +243,30 @@ export interface Project {
   updatedAt: string;
 }
 
+/** Page-level node types — attached to a specific page. */
+export const PAGE_NODE_TYPES: readonly NodeType[] = ['SCREEN', 'UI_ELEMENT', 'ACTION', 'ROLE'] as const;
+/** Global node types — shared across all pages. */
+export const GLOBAL_NODE_TYPES: readonly NodeType[] = ['DATA_MODEL', 'API_ENDPOINT'] as const;
+
+export function isPageNodeType(type: NodeType): boolean {
+  return (PAGE_NODE_TYPES as readonly string[]).includes(type);
+}
+
+export interface Page {
+  id: string;
+  projectId: string;
+  name: string;
+  route: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Node<T extends NodeType = NodeType> {
   id: string;
   projectId: string;
+  /** null = global node (DATA_MODEL, API_ENDPOINT) or not yet assigned */
+  pageId: string | null;
   type: T;
   name: string;
   position: Position;
@@ -270,6 +291,7 @@ export interface Edge {
 
 export interface ProjectGraph {
   project: Project;
+  pages: Page[];
   nodes: AnyNode[];
   edges: Edge[];
 }
@@ -299,8 +321,25 @@ export interface CreateNodeInput<T extends NodeType = NodeType> {
 
 export type UpdateNodeInput = Partial<{
   name: string;
+  pageId: string | null;
   position: Position;
   data: Record<string, unknown>;
+}>;
+
+// ---------------------------------------------------------------------------
+// Page input DTOs
+// ---------------------------------------------------------------------------
+
+export interface CreatePageInput {
+  name: string;
+  route?: string;
+  order?: number;
+}
+
+export type UpdatePageInput = Partial<{
+  name: string;
+  route: string | null;
+  order: number;
 }>;
 
 export interface CreateEdgeInput {
