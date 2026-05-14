@@ -26,7 +26,7 @@
 }
 
 .pb-sim__role,
-.pb-sim__screen {
+.pb-sim__screen-select {
   width: 200px;
   height: 32px;
   padding: 0 var(--space-3);
@@ -74,6 +74,21 @@
   gap: var(--space-3);
 }
 
+/* All interactive elements inside the simulated screen fill the full width,
+   just like they would in a real UI layout. */
+.pb-sim__ui-list .pb-btn,
+.pb-sim__ui-list .pb-input {
+  width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  height: auto;
+  min-height: 32px;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+  justify-content: center;
+  text-align: center;
+}
+
 .pb-sim__form {
   display: flex;
   gap: var(--space-3);
@@ -84,9 +99,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
   border: 1px dashed var(--border-hairline);
   border-radius: var(--radius-md);
   padding: var(--space-4);
+}
+
+/* Let the label shrink so the Refresh button is always visible. */
+.pb-sim__list .pb-eyebrow {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pb-sim__list-refresh {

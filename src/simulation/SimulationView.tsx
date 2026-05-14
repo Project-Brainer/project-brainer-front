@@ -84,7 +84,7 @@ export function SimulationView() {
             ))}
           </select>
           <select
-            className="pb-input pb-select pb-sim__screen"
+            className="pb-input pb-select pb-sim__screen-select"
             value={state.currentScreenId ?? ''}
             onChange={(e) => {
               const next = e.target.value || null;
@@ -104,9 +104,6 @@ export function SimulationView() {
         <div className="pb-sim__right">
           <Button variant="ghost" iconLeft="rotate-ccw" onClick={onResetSimulation}>
             Reset
-          </Button>
-          <Button variant="primary" iconLeft="log-out" onClick={() => setMode('design')}>
-            Exit simulation
           </Button>
         </div>
       </header>
