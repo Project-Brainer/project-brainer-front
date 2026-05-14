@@ -7,6 +7,7 @@ import { BranchSelector } from '../components/BranchSelector';
 import { CommitModal } from '../components/CommitModal';
 import { Icon } from '../components/Icon';
 import { MergeModal } from '../components/MergeModal';
+import { PagesPanel } from '../components/PagesPanel';
 import { PromptModal } from '../components/PromptModal';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { EdgeInspector } from '../editors/EdgeInspector';
@@ -188,6 +189,8 @@ function Sidebar({ open }: { open: boolean }) {
   const selectedNodeId = useUiStore((s) => s.selectedNodeId);
   const selectNode = useUiStore((s) => s.selectNode);
   const focusNode = useUiStore((s) => s.focusNode);
+  const sidebarTab = useUiStore((s) => s.sidebarTab);
+  const setSidebarTab = useUiStore((s) => s.setSidebarTab);
 
   const nodesByType = useMemo(() => {
     const map: Partial<Record<NodeType, AnyNode[]>> = {};
@@ -200,61 +203,83 @@ function Sidebar({ open }: { open: boolean }) {
 
   return (
     <aside className={`pb-sidebar${open ? '' : ' pb-sidebar--hidden'}`}>
-      <div className="pb-sidebar__group">
-        <div className="pb-sidebar__title">Elements</div>
-        {(Object.keys(NODE_META) as NodeType[]).map((type) => {
-          const meta = NODE_META[type];
-          const typeNodes = nodesByType[type] ?? [];
-          return (
-            <div key={type} className="pb-sidebar__type-group">
-              <div className="pb-sidebar__section-head">
-                <span
-                  className="pb-sidebar__section-title"
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('application/x-brainer-node', type);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
-                  title={`Drag to add ${meta.label}`}
-                >
-                  {meta.label}
-                </span>
-                <button
-                  className="pb-sidebar__add-btn"
-                  onClick={async () => {
-                    const created = await createNode({ type });
-                    if (created) {
-                      selectNode(created.id);
-                      focusNode(created.id);
-                    }
-                  }}
-                  title={`Add ${meta.label}`}
-                >
-                  <Icon name="plus" size={12} />
-                </button>
-              </div>
-              {typeNodes.map((node) => (
-                <button
-                  key={node.id}
-                  className={`pb-sidebar__node-item${selectedNodeId === node.id ? ' pb-sidebar__node-item--active' : ''}`}
-                  onClick={() => {
-                    selectNode(node.id);
-                    focusNode(node.id);
-                  }}
-                  title={node.name || meta.label}
-                >
-                  <Icon name={meta.iconName} size={14} />
-                  <span className="pb-sidebar__node-name">
-                    {node.name || <span className="pb-sidebar__node-unnamed">{meta.shortLabel}</span>}
-                  </span>
-                </button>
-              ))}
-            </div>
-          );
-        })}
+      {/* Tab switcher */}
+      <div className="pb-sidebar__tabs">
+        <button
+          className={`pb-sidebar__tab${sidebarTab === 'pages' ? ' pb-sidebar__tab--active' : ''}`}
+          onClick={() => setSidebarTab('pages')}
+        >
+          <Icon name="layout" size={13} />
+          Pages
+        </button>
+        <button
+          className={`pb-sidebar__tab${sidebarTab === 'elements' ? ' pb-sidebar__tab--active' : ''}`}
+          onClick={() => setSidebarTab('elements')}
+        >
+          <Icon name="box" size={13} />
+          Elements
+        </button>
       </div>
 
-      <div className="pb-sidebar__group">
+      {sidebarTab === 'pages' && <PagesPanel />}
+
+      {sidebarTab === 'elements' && (
+        <div className="pb-sidebar__group">
+          <div className="pb-sidebar__title">Elements</div>
+          {(Object.keys(NODE_META) as NodeType[]).map((type) => {
+            const meta = NODE_META[type];
+            const typeNodes = nodesByType[type] ?? [];
+            return (
+              <div key={type} className="pb-sidebar__type-group">
+                <div className="pb-sidebar__section-head">
+                  <span
+                    className="pb-sidebar__section-title"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('application/x-brainer-node', type);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    title={`Drag to add ${meta.label}`}
+                  >
+                    {meta.label}
+                  </span>
+                  <button
+                    className="pb-sidebar__add-btn"
+                    onClick={async () => {
+                      const created = await createNode({ type });
+                      if (created) {
+                        selectNode(created.id);
+                        focusNode(created.id);
+                      }
+                    }}
+                    title={`Add ${meta.label}`}
+                  >
+                    <Icon name="plus" size={12} />
+                  </button>
+                </div>
+                {typeNodes.map((node) => (
+                  <button
+                    key={node.id}
+                    className={`pb-sidebar__node-item${selectedNodeId === node.id ? ' pb-sidebar__node-item--active' : ''}`}
+                    onClick={() => {
+                      selectNode(node.id);
+                      focusNode(node.id);
+                    }}
+                    title={node.name || meta.label}
+                  >
+                    <Icon name={meta.iconName} size={14} />
+                    <span className="pb-sidebar__node-name">
+                      {node.name || <span className="pb-sidebar__node-unnamed">{meta.shortLabel}</span>}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="pb-sidebar__group pb-sidebar__group--bottom">
         <div className="pb-sidebar__title">Validation</div>
         <ValidationPanel />
       </div>

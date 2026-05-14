@@ -418,3 +418,220 @@
   color: var(--fg-4);
   font-style: italic;
 }
+
+/* -------- Sidebar tabs (Pages / Elements) -------- */
+
+.pb-sidebar__tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border-hairline);
+  margin: calc(var(--space-5) * -1) calc(var(--space-4) * -1) var(--space-4);
+  padding: var(--space-2) var(--space-3) 0;
+}
+
+.pb-sidebar__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--fg-3);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+  margin-bottom: -1px;
+}
+
+.pb-sidebar__tab:hover {
+  color: var(--fg-1);
+}
+
+.pb-sidebar__tab--active {
+  color: var(--fg-1);
+  font-weight: 500;
+  border-bottom-color: var(--accent);
+}
+
+/* Bottom-anchored validation group */
+.pb-sidebar__group--bottom {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-hairline);
+}
+
+/* -------- Pages panel -------- */
+
+.pb-pages-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pb-pages-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 6px;
+}
+
+.pb-pages-panel__all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  margin: 0 0 4px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.pb-pages-panel__all-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.pb-pages-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pb-pages-panel__empty {
+  padding: var(--space-4) var(--space-3);
+  color: var(--fg-4);
+  font-size: var(--text-sm);
+  font-style: italic;
+  text-align: center;
+}
+
+.pb-pages-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.pb-pages-panel__row:hover {
+  background: var(--bg-hover);
+}
+
+.pb-pages-panel__row--focused {
+  background: var(--accent-soft);
+}
+
+.pb-pages-panel__row--focused:hover {
+  background: var(--accent-soft);
+}
+
+.pb-pages-panel__row--new {
+  background: var(--bg-hover);
+}
+
+.pb-pages-panel__focus-btn,
+.pb-pages-panel__delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 2px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg-4);
+  cursor: pointer;
+  transition:
+    background 80ms var(--ease-out),
+    color 80ms var(--ease-out);
+}
+
+.pb-pages-panel__focus-btn:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+
+.pb-pages-panel__delete-btn {
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast),
+    background 80ms var(--ease-out),
+    color 80ms var(--ease-out);
+}
+
+.pb-pages-panel__row:hover .pb-pages-panel__delete-btn {
+  opacity: 1;
+}
+
+.pb-pages-panel__delete-btn:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.pb-pages-panel__name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  padding: 0;
+}
+
+.pb-pages-panel__name-text {
+  font-size: var(--text-sm);
+  color: var(--fg-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-pages-panel__route {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-pages-panel__name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--fg-1);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  outline: none;
+}
+
+.pb-pages-panel__new-icon {
+  flex-shrink: 0;
+  color: var(--fg-4);
+}
+
+/* -------- MiniMap -------- */
+
+.pb-minimap {
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised) !important;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}

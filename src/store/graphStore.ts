@@ -16,6 +16,7 @@ import { branchesApi } from '../api/branches';
 import { edgesApi } from '../api/edges';
 import { graphApi } from '../api/graph';
 import { nodesApi } from '../api/nodes';
+import { pagesApi } from '../api/pages';
 import { projectsApi } from '../api/projects';
 import { validationApi } from '../api/validation';
 import { useBranchStore } from './branchStore';
@@ -24,14 +25,17 @@ import type {
   AnyNode,
   CreateEdgeInput,
   CreateNodeInput,
+  CreatePageInput,
   Edge,
   EdgeType,
   NodeType,
+  Page,
   Position,
   Project,
   ProjectGraph,
   ReplaceGraphBody,
   UiElementData,
+  UpdatePageInput,
   Viewport,
 } from '../api/types';
 import { debounce } from '../lib/debounce';
@@ -48,6 +52,7 @@ export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 export interface GraphState {
   project: Project | null;
+  pages: Page[];
   nodes: AnyNode[];
   edges: Edge[];
 
@@ -118,6 +123,12 @@ export interface GraphState {
 
   // -------- branch graph loading --------
   loadBranchGraph: (projectId: string, branchId: string) => Promise<void>;
+
+  // -------- page ops --------
+  createPage: (input: CreatePageInput) => Promise<Page | null>;
+  updatePage: (pageId: string, patch: UpdatePageInput) => Promise<void>;
+  deletePage: (pageId: string) => Promise<void>;
+  assignNodeToPage: (nodeId: string, pageId: string | null) => void;
 }
 
 export const useGraphStore = create<GraphState>()((set, get) => {
@@ -291,6 +302,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
 
   return {
     project: null,
+    pages: [],
     nodes: [],
     edges: [],
     loadingProjectId: null,
@@ -309,6 +321,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         loadingProjectId: projectId,
         loadError: null,
         project: null,
+        pages: [],
         nodes: [],
         edges: [],
         saveStatus: 'idle',
@@ -319,6 +332,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         const graph = await graphApi.get(projectId);
         set({
           project: graph.project,
+          pages: graph.pages ?? [],
           nodes: graph.nodes,
           edges: graph.edges,
           loadingProjectId: null,
@@ -338,6 +352,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       promoting.clear();
       set({
         project: null,
+        pages: [],
         nodes: [],
         edges: [],
         saveStatus: 'idle',
@@ -368,6 +383,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
         const localNode: AnyNode = {
           id: uuid(),
           projectId: project.id,
+          pageId: null,
           type,
           name: resolvedName,
           position: resolvedPosition,
@@ -623,6 +639,7 @@ export const useGraphStore = create<GraphState>()((set, get) => {
     replaceFromGraph(graph) {
       set({
         project: graph.project,
+        pages: graph.pages ?? [],
         nodes: graph.nodes,
         edges: graph.edges,
         saveStatus: 'saved',
@@ -647,6 +664,64 @@ export const useGraphStore = create<GraphState>()((set, get) => {
       } catch (err) {
         set({ loadError: (err as Error).message, loadingProjectId: null });
       }
+    },
+
+    // ── page operations ───────────────────────────────────────────────────────
+
+    async createPage(input) {
+      const { project } = get();
+      if (!project) return null;
+      try {
+        const page = await pagesApi.create(project.id, input);
+        set({ pages: [...get().pages, page] });
+        return page;
+      } catch (err) {
+        set({ saveStatus: 'error', lastSaveError: (err as Error).message });
+        return null;
+      }
+    },
+
+    async updatePage(pageId, patch) {
+      const { project } = get();
+      if (!project) return;
+      try {
+        const updated = await pagesApi.update(project.id, pageId, patch);
+        set({ pages: get().pages.map((p) => (p.id === pageId ? updated : p)) });
+      } catch (err) {
+        set({ saveStatus: 'error', lastSaveError: (err as Error).message });
+      }
+    },
+
+    async deletePage(pageId) {
+      const { project } = get();
+      if (!project) return;
+      // Optimistic: remove page and un-assign its nodes locally.
+      set({
+        pages: get().pages.filter((p) => p.id !== pageId),
+        nodes: get().nodes.map((n) =>
+          n.pageId === pageId ? { ...n, pageId: null } : n,
+        ),
+      });
+      try {
+        await pagesApi.remove(project.id, pageId);
+      } catch (err) {
+        set({ saveStatus: 'error', lastSaveError: (err as Error).message });
+      }
+    },
+
+    assignNodeToPage(nodeId, pageId) {
+      const { project } = get();
+      if (!project) return;
+      // Optimistic update.
+      set({
+        nodes: get().nodes.map((n) =>
+          n.id === nodeId ? { ...n, pageId } : n,
+        ),
+      });
+      // Persist immediately via PATCH /nodes/:id (not the slow autosave).
+      void nodesApi.update(project.id, nodeId, { pageId }).catch((err) => {
+        set({ saveStatus: 'error', lastSaveError: (err as Error).message });
+      });
     },
   };
 });

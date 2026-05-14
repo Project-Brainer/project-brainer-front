@@ -13,6 +13,8 @@ export interface UiState {
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
   focusNodeId: string | null;
+  /** null = show all; string = focus-mode: show only this page's nodes + globals */
+  focusedPageId: string | null;
   mode: CanvasMode;
   validationIssues: ValidationIssue[];
   validationRunAt: number | null;
@@ -22,12 +24,15 @@ export interface UiState {
   promptScopeNodeIds: string[] | null;
   sidebarOpen: boolean;
   rightPanelOpen: boolean;
+  /** Which sidebar tab is active: pages list or elements list */
+  sidebarTab: 'pages' | 'elements';
 
   selectNode: (id: string | null) => void;
   selectEdge: (id: string | null) => void;
   clearSelection: () => void;
   focusNode: (id: string) => void;
   clearFocusNode: () => void;
+  setFocusedPage: (pageId: string | null) => void;
   setMode: (mode: CanvasMode) => void;
   setValidation: (issues: ValidationIssue[]) => void;
   setValidationRunning: (running: boolean) => void;
@@ -36,12 +41,14 @@ export interface UiState {
   closePromptModal: () => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
+  setSidebarTab: (tab: 'pages' | 'elements') => void;
 }
 
 export const useUiStore = create<UiState>()((set) => ({
   selectedNodeId: null,
   selectedEdgeId: null,
   focusNodeId: null,
+  focusedPageId: null,
   mode: 'design',
   validationIssues: [],
   validationRunAt: null,
@@ -51,6 +58,7 @@ export const useUiStore = create<UiState>()((set) => ({
   promptScopeNodeIds: null,
   sidebarOpen: true,
   rightPanelOpen: true,
+  sidebarTab: 'pages',
 
   selectNode(id) {
     set({ selectedNodeId: id, selectedEdgeId: null });
@@ -66,6 +74,9 @@ export const useUiStore = create<UiState>()((set) => ({
   },
   clearFocusNode() {
     set({ focusNodeId: null });
+  },
+  setFocusedPage(pageId) {
+    set({ focusedPageId: pageId });
   },
   setMode(mode) {
     set({ mode });
@@ -95,5 +106,8 @@ export const useUiStore = create<UiState>()((set) => ({
   },
   toggleRightPanel() {
     set((s) => ({ rightPanelOpen: !s.rightPanelOpen }));
+  },
+  setSidebarTab(tab) {
+    set({ sidebarTab: tab });
   },
 }));

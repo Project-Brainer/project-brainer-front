@@ -1,4 +1,5 @@
-import type { AnyNode } from '../api/types';
+import type { AnyNode, NodeType } from '../api/types';
+import { isPageNodeType } from '../api/types';
 import { Button } from '../components/Button';
 import { Input } from '../components/Field';
 import { Icon } from '../components/Icon';
@@ -15,8 +16,11 @@ import { UiElementEditor } from './UiElementEditor';
 export function NodeInspector({ node }: { node: AnyNode }) {
   const updateNode = useGraphStore((s) => s.updateNode);
   const deleteNode = useGraphStore((s) => s.deleteNode);
+  const assignNodeToPage = useGraphStore((s) => s.assignNodeToPage);
+  const pages = useGraphStore((s) => s.pages);
   const clearSelection = useUiStore((s) => s.clearSelection);
   const meta = NODE_META[node.type];
+  const isPageLevel = isPageNodeType(node.type as NodeType);
 
   return (
     <div className="pb-inspector">
@@ -37,6 +41,27 @@ export function NodeInspector({ node }: { node: AnyNode }) {
         value={node.name}
         onChange={(e) => updateNode(node.id, { name: e.target.value })}
       />
+
+      {/* Page assignment — only for page-level node types */}
+      {isPageLevel && pages.length > 0 && (
+        <div className="pb-inspector__field">
+          <label className="pb-inspector__label">Page</label>
+          <select
+            className="pb-inspector__select"
+            value={node.pageId ?? ''}
+            onChange={(e) =>
+              assignNodeToPage(node.id, e.target.value || null)
+            }
+          >
+            <option value="">— Unassigned —</option>
+            {pages.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}{p.route ? ` (${p.route})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="pb-divider" />
 
