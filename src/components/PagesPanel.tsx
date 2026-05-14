@@ -1,13 +1,10 @@
 /**
- * PagesPanel — manages the list of project pages.
+ * PagesPanel — list of project pages.
  *
- * Each page is a named group that page-level nodes (SCREEN, UI_ELEMENT,
- * ACTION, ROLE) can be assigned to. Global nodes (DATA_MODEL, API_ENDPOINT)
- * are always visible and unaffected by focus mode.
- *
- * Clicking the focus icon next to a page enters focus-mode: the canvas shows
- * only that page's nodes + all global nodes. Clicking again (or the "All"
- * button) exits focus mode.
+ * Single click → activate page (focus mode: show only this page + global nodes).
+ * Single click on active page → deactivate (show all).
+ * Double click on name → inline rename.
+ * Trash icon (hover) → delete page.
  */
 
 import { useRef, useState } from 'react';
@@ -46,17 +43,6 @@ export function PagesPanel() {
         </button>
       </div>
 
-      {focusedPageId && (
-        <button
-          className="pb-pages-panel__all-btn"
-          onClick={() => setFocusedPage(null)}
-          title="Exit focus mode — show all pages"
-        >
-          <Icon name="layers" size={12} />
-          <span>All pages</span>
-        </button>
-      )}
-
       <div className="pb-pages-panel__list">
         {pages.length === 0 && !creatingNew && (
           <div className="pb-pages-panel__empty">
@@ -68,8 +54,8 @@ export function PagesPanel() {
           <PageRow
             key={page.id}
             page={page}
-            focused={focusedPageId === page.id}
-            onFocus={() =>
+            active={focusedPageId === page.id}
+            onClick={() =>
               setFocusedPage(focusedPageId === page.id ? null : page.id)
             }
             onRename={(name) => updatePage(page.id, { name })}
@@ -95,19 +81,20 @@ export function PagesPanel() {
 
 function PageRow({
   page,
-  focused,
-  onFocus,
+  active,
+  onClick,
   onRename,
   onDelete,
 }: {
   page: Page;
-  focused: boolean;
-  onFocus: () => void;
+  active: boolean;
+  onClick: () => void;
   onRename: (name: string) => void;
   onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(page.name);
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const commit = () => {
     const trimmed = draft.trim();
@@ -116,23 +103,42 @@ function PageRow({
     setEditing(false);
   };
 
+  // Single click → activate; double click → rename (cancel single click action)
+  const handleClick = () => {
+    if (editing) return;
+    clickTimer.current = setTimeout(() => {
+      onClick();
+    }, 200);
+  };
+
+  const handleDoubleClick = () => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    setDraft(page.name);
+    setEditing(true);
+  };
+
   return (
     <div
-      className={`pb-pages-panel__row${focused ? ' pb-pages-panel__row--focused' : ''}`}
+      className={`pb-pages-panel__row${active ? ' pb-pages-panel__row--active' : ''}`}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      title={active ? 'Click to show all pages' : 'Click to focus this page'}
     >
-      <button
-        className="pb-pages-panel__focus-btn"
-        onClick={onFocus}
-        title={focused ? 'Exit focus mode' : 'Focus on this page'}
-      >
-        <Icon name={focused ? 'eye' : 'eye-off'} size={13} />
-      </button>
+      <Icon
+        name="file"
+        size={13}
+        className={`pb-pages-panel__file-icon${active ? ' pb-pages-panel__file-icon--active' : ''}`}
+      />
 
       {editing ? (
         <input
           className="pb-pages-panel__name-input"
           value={draft}
           autoFocus
+          onClick={(e) => e.stopPropagation()}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
@@ -144,24 +150,17 @@ function PageRow({
           }}
         />
       ) : (
-        <button
-          className="pb-pages-panel__name"
-          onDoubleClick={() => {
-            setDraft(page.name);
-            setEditing(true);
-          }}
-          title={page.route ? `Route: ${page.route}` : undefined}
-        >
+        <span className="pb-pages-panel__name">
           <span className="pb-pages-panel__name-text">{page.name}</span>
           {page.route && (
             <span className="pb-pages-panel__route">{page.route}</span>
           )}
-        </button>
+        </span>
       )}
 
       <button
         className="pb-pages-panel__delete-btn"
-        onClick={onDelete}
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
         title="Delete page (nodes are not deleted)"
       >
         <Icon name="trash-2" size={12} />
@@ -180,13 +179,11 @@ function NewPageRow({
   onCancel: () => void;
 }) {
   const [value, setValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="pb-pages-panel__row pb-pages-panel__row--new">
-      <Icon name="file-plus" size={13} className="pb-pages-panel__new-icon" />
+      <Icon name="file-plus" size={13} className="pb-pages-panel__file-icon" />
       <input
-        ref={inputRef}
         className="pb-pages-panel__name-input"
         value={value}
         autoFocus

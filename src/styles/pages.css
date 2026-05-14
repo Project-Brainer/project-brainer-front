@@ -478,27 +478,6 @@
   padding: 4px 8px 6px;
 }
 
-.pb-pages-panel__all-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  margin: 0 0 4px;
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
-}
-
-.pb-pages-panel__all-btn:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
 
 .pb-pages-panel__list {
   display: flex;
@@ -517,29 +496,44 @@
 .pb-pages-panel__row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
   border-radius: var(--radius-sm);
-  transition: background var(--dur-fast) var(--ease-out);
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
 
 .pb-pages-panel__row:hover {
   background: var(--bg-hover);
 }
 
-.pb-pages-panel__row--focused {
+.pb-pages-panel__row--active {
   background: var(--accent-soft);
+  border-left-color: var(--accent);
 }
 
-.pb-pages-panel__row--focused:hover {
+.pb-pages-panel__row--active:hover {
   background: var(--accent-soft);
 }
 
 .pb-pages-panel__row--new {
   background: var(--bg-hover);
+  cursor: default;
 }
 
-.pb-pages-panel__focus-btn,
+.pb-pages-panel__file-icon {
+  flex-shrink: 0;
+  color: var(--fg-4);
+}
+
+.pb-pages-panel__file-icon--active {
+  color: var(--accent);
+}
+
 .pb-pages-panel__delete-btn {
   display: inline-flex;
   align-items: center;
@@ -551,17 +545,6 @@
   background: transparent;
   color: var(--fg-4);
   cursor: pointer;
-  transition:
-    background 80ms var(--ease-out),
-    color 80ms var(--ease-out);
-}
-
-.pb-pages-panel__focus-btn:hover {
-  background: var(--bg-hover);
-  color: var(--accent);
-}
-
-.pb-pages-panel__delete-btn {
   opacity: 0;
   transition:
     opacity var(--dur-fast),
@@ -584,11 +567,6 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: default;
-  padding: 0;
 }
 
 .pb-pages-panel__name-text {
@@ -597,6 +575,11 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.pb-pages-panel__row--active .pb-pages-panel__name-text {
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .pb-pages-panel__route {
@@ -619,11 +602,6 @@
   font-size: var(--text-sm);
   font-family: var(--font-sans);
   outline: none;
-}
-
-.pb-pages-panel__new-icon {
-  flex-shrink: 0;
-  color: var(--fg-4);
 }
 
 /* -------- MiniMap -------- */
